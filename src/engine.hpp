@@ -53,11 +53,15 @@ class Engine {
 
     // Info variables
     Size windowSize;
+    EngineInitConfig initConfig;
+    bool _shouldClose = false;
 
     // System
     Window window;
 
     // Vulkan Components
+    vk::raii::Context ctx;
+    vk::raii::Instance instance{nullptr};
     vk::raii::Device device{nullptr};
     vk::raii::DebugUtilsMessengerEXT debug_messenger{nullptr};
     vk::raii::PhysicalDevice chosenGPU{nullptr};
@@ -84,4 +88,8 @@ class Engine {
    public:
     Engine(const EngineInitConfig& initConfig);
     ~Engine();
+
+    bool shouldClose() { return _shouldClose; }
+
+    void update();
 };

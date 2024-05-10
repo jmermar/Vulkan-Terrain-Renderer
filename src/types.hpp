@@ -23,8 +23,13 @@ struct Rect {
     int32_t x{}, y{};
 };
 
+enum class PresentationFormat : uint32_t {
+    Immediate = VK_PRESENT_MODE_IMMEDIATE_KHR
+};
+
 struct EngineInitConfig {
     Size screenSize{};
+    PresentationFormat presentation;
     const char* appName{};
     bool useImGUI{};
 };
