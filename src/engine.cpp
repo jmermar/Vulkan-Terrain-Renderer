@@ -139,7 +139,7 @@ void Engine::initFrameData() {
 
         vk::SemaphoreCreateInfo semaphoreCreate;
         frame.swapchainSemaphore = device.createSemaphore(semaphoreCreate);
-        frame.swapchainSemaphore = device.createSemaphore(semaphoreCreate);
+        frame.renderSemaphore = device.createSemaphore(semaphoreCreate);
     }
 }
 
@@ -163,4 +163,109 @@ void Engine::update() {
                 break;
         }
     }
+}
+
+vk::CommandBuffer Engine::initFrame() {
+    auto& frame = frames[frameCounter % FRAMES_IN_FLIGHT];
+    static_cast<void>(
+        device.waitForFences({frame.renderFence}, true, 10000000000000));
+    device.resetFences({frame.renderFence});
+
+    auto result = swapchain.swapchain.acquireNextImage(
+        10000000000000, frame.swapchainSemaphore);
+
+    if (result.first == vk::Result::eErrorOutOfDateKHR) {
+        shouldRegenerate = true;
+        frameCounter++;
+        return vk::CommandBuffer(nullptr);
+    }
+
+    imageIndex = result.second;
+    frame.commandBuffer.reset();
+    vk::CommandBufferBeginInfo cmdBeginInfo;
+    cmdBeginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+    frame.commandBuffer.begin(cmdBeginInfo);
+
+    return frame.commandBuffer;
+}
+
+void Engine::submitFrame() {
+    auto& frame = frames[frameCounter % FRAMES_IN_FLIGHT];
+
+    transitionImage(frame.commandBuffer, swapchain.images[imageIndex],
+                    vk::ImageLayout::eUndefined,
+                    vk::PipelineStageFlagBits2::eAllCommands,
+                    vk::ImageLayout::ePresentSrcKHR,
+                    vk::PipelineStageFlagBits2KHR::eAllCommands);
+
+    frame.commandBuffer.end();
+
+    vk::CommandBufferSubmitInfo commandBufferSubmitInfo;
+    commandBufferSubmitInfo.commandBuffer = frame.commandBuffer;
+
+    vk::SemaphoreSubmitInfo waitInfo, signalInfo;
+
+    waitInfo.semaphore = frame.swapchainSemaphore;
+    waitInfo.stageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+
+    signalInfo.semaphore = frame.renderSemaphore;
+    signalInfo.stageMask = vk::PipelineStageFlagBits2::eAllGraphics;
+
+    vk::SubmitInfo2 submitInfo;
+    submitInfo.waitSemaphoreInfoCount = 1;
+    submitInfo.pWaitSemaphoreInfos = &waitInfo;
+    submitInfo.signalSemaphoreInfoCount = 1;
+    submitInfo.pSignalSemaphoreInfos = &signalInfo;
+    submitInfo.commandBufferInfoCount = 1;
+    submitInfo.pCommandBufferInfos = &commandBufferSubmitInfo;
+
+    graphicsQueue.submit2({submitInfo}, frame.renderFence);
+
+    auto sw = *swapchain.swapchain;
+
+    vk::PresentInfoKHR presentInfo;
+    presentInfo.swapchainCount = 1;
+    presentInfo.pImageIndices = &imageIndex;
+    presentInfo.pSwapchains = &sw;
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores = &(*frame.renderSemaphore);
+
+    auto presentResult = graphicsQueue.presentKHR(presentInfo);
+
+    if (presentResult == vk::Result::eErrorOutOfDateKHR) {
+        shouldRegenerate = true;
+    }
+
+    frameCounter++;
+}
+
+void Engine::transitionImage(vk::CommandBuffer cmd, vk::Image image,
+                             vk::ImageLayout srcLayout,
+                             vk::PipelineStageFlagBits2 srcStage,
+                             vk::ImageLayout dstLayout,
+                             vk::PipelineStageFlagBits2 dstStage) {
+    vk::ImageMemoryBarrier2KHR imageBarrier;
+    imageBarrier.srcAccessMask = vk::AccessFlagBits2::eMemoryWrite;
+    imageBarrier.srcStageMask = srcStage;
+
+    imageBarrier.dstAccessMask =
+        vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite;
+    imageBarrier.dstStageMask = dstStage;
+
+    imageBarrier.oldLayout = srcLayout;
+    imageBarrier.newLayout = dstLayout;
+
+    vk::ImageSubresourceRange range;
+    range.levelCount = vk::RemainingMipLevels;
+    range.layerCount = vk::RemainingArrayLayers;
+    range.aspectMask = vk::ImageAspectFlagBits::eColor;
+
+    imageBarrier.subresourceRange = range;
+
+    imageBarrier.image = image;
+
+    vk::DependencyInfo dependencyInfo;
+    dependencyInfo.imageMemoryBarrierCount = 1;
+    dependencyInfo.pImageMemoryBarriers = &imageBarrier;
+    cmd.pipelineBarrier2(dependencyInfo);
 }

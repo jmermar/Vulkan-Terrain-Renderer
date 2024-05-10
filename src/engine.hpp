@@ -55,6 +55,10 @@ class Engine {
     Size windowSize;
     EngineInitConfig initConfig;
     bool _shouldClose = false;
+    uint32_t frameCounter{};
+    uint32_t swapchainImageIndex = 0;
+    uint32_t imageIndex = 0;
+    bool shouldRegenerate = false;
 
     // System
     Window window;
@@ -92,4 +96,16 @@ class Engine {
     bool shouldClose() { return _shouldClose; }
 
     void update();
+
+    vk::CommandBuffer initFrame();
+
+    vk::Image getFrameImage() { return swapchain.images[imageIndex]; }
+
+    void submitFrame();
+
+    void transitionImage(vk::CommandBuffer cmd, vk::Image image,
+                         vk::ImageLayout srcLayout,
+                         vk::PipelineStageFlagBits2 srcStage,
+                         vk::ImageLayout dstLayout,
+                         vk::PipelineStageFlagBits2 dstStage);
 };
