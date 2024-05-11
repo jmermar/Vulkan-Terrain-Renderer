@@ -11,22 +11,13 @@ int main() {
 
         auto cmd = engine.initFrame();
 
-        if (cmd != nullptr) {
+        if (cmd.isValid()) {
             auto image = engine.getFrameImage();
 
-            engine.transitionImage(cmd, image, vk::ImageLayout::eUndefined,
-                                   vk::PipelineStageFlagBits2::eAllCommands,
-                                   vk::ImageLayout::eTransferDstOptimal,
-                                   vk::PipelineStageFlagBits2KHR::eAllCommands);
-            vk::ImageSubresourceRange range;
-            range.levelCount = vk::RemainingMipLevels;
-            range.layerCount = vk::RemainingArrayLayers;
-            range.aspectMask = vk::ImageAspectFlagBits::eColor;
+            cmd.transitionImage(image, vk::ImageLayout::eUndefined,
+                                vk::ImageLayout::eTransferDstOptimal);
 
-            vk::ClearColorValue color;
-            color.setFloat32({1.f, 0.f, 0.f, 0.f});
-            cmd.clearColorImage(image, vk::ImageLayout::eTransferDstOptimal,
-                                color, range);
+            cmd.clearImage(image, 1, 0, 0, 0);
 
             engine.submitFrame();
         }

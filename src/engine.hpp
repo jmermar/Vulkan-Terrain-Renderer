@@ -1,6 +1,8 @@
 #pragma once
 #include <SDL3/SDL.h>
 
+#include "binding.hpp"
+#include "commands.hpp"
 #include "gpu_resources.hpp"
 #include "raii.hpp"
 #include "types.hpp"
@@ -84,6 +86,8 @@ class Engine {
     Swapchain swapchain;
     FrameData frames[FRAMES_IN_FLIGHT];
 
+    GlobalBinding bindings;
+
     void initWindow();
     void initVulkan();
     void reloadSwapchain();
@@ -97,15 +101,9 @@ class Engine {
 
     void update();
 
-    vk::CommandBuffer initFrame();
+    CommandBuffer initFrame();
 
     vk::Image getFrameImage() { return swapchain.images[imageIndex]; }
 
     void submitFrame();
-
-    void transitionImage(vk::CommandBuffer cmd, vk::Image image,
-                         vk::ImageLayout srcLayout,
-                         vk::PipelineStageFlagBits2 srcStage,
-                         vk::ImageLayout dstLayout,
-                         vk::PipelineStageFlagBits2 dstStage);
 };

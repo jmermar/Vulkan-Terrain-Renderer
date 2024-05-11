@@ -40,6 +40,8 @@ enum class TextureFormat : uint32_t {
 };
 
 template <typename T>
-using BindPoint = uint32_t;
+struct BindPoint {
+    uint32_t bind;
+};
 
 enum class TextureSampler { NEAREST, LINEAR };

@@ -150,6 +150,7 @@ Engine::Engine(const EngineInitConfig& initConfig) {
     initVulkan();
     reloadSwapchain();
     initFrameData();
+    bindings.init(device, physicalDeviceProperties);
 }
 
 Engine::~Engine() { device.waitIdle(); }
@@ -165,7 +166,7 @@ void Engine::update() {
     }
 }
 
-vk::CommandBuffer Engine::initFrame() {
+CommandBuffer Engine::initFrame() {
     auto& frame = frames[frameCounter % FRAMES_IN_FLIGHT];
     static_cast<void>(
         device.waitForFences({frame.renderFence}, true, 10000000000000));
@@ -181,22 +182,22 @@ vk::CommandBuffer Engine::initFrame() {
     }
 
     imageIndex = result.second;
-    frame.commandBuffer.reset();
-    vk::CommandBufferBeginInfo cmdBeginInfo;
-    cmdBeginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-    frame.commandBuffer.begin(cmdBeginInfo);
 
-    return frame.commandBuffer;
+    auto cmd = CommandBuffer(frame.commandBuffer);
+    cmd.begin();
+    return cmd;
 }
 
 void Engine::submitFrame() {
     auto& frame = frames[frameCounter % FRAMES_IN_FLIGHT];
 
-    transitionImage(frame.commandBuffer, swapchain.images[imageIndex],
-                    vk::ImageLayout::eUndefined,
-                    vk::PipelineStageFlagBits2::eAllCommands,
-                    vk::ImageLayout::ePresentSrcKHR,
-                    vk::PipelineStageFlagBits2KHR::eAllCommands);
+    auto cmd = CommandBuffer(frame.commandBuffer);
+
+    cmd.transitionImage(swapchain.images[imageIndex],
+                        vk::ImageLayout::eUndefined,
+                        vk::PipelineStageFlagBits2::eAllCommands,
+                        vk::ImageLayout::ePresentSrcKHR,
+                        vk::PipelineStageFlagBits2KHR::eAllCommands);
 
     frame.commandBuffer.end();
 
@@ -237,35 +238,4 @@ void Engine::submitFrame() {
     }
 
     frameCounter++;
-}
-
-void Engine::transitionImage(vk::CommandBuffer cmd, vk::Image image,
-                             vk::ImageLayout srcLayout,
-                             vk::PipelineStageFlagBits2 srcStage,
-                             vk::ImageLayout dstLayout,
-                             vk::PipelineStageFlagBits2 dstStage) {
-    vk::ImageMemoryBarrier2KHR imageBarrier;
-    imageBarrier.srcAccessMask = vk::AccessFlagBits2::eMemoryWrite;
-    imageBarrier.srcStageMask = srcStage;
-
-    imageBarrier.dstAccessMask =
-        vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite;
-    imageBarrier.dstStageMask = dstStage;
-
-    imageBarrier.oldLayout = srcLayout;
-    imageBarrier.newLayout = dstLayout;
-
-    vk::ImageSubresourceRange range;
-    range.levelCount = vk::RemainingMipLevels;
-    range.layerCount = vk::RemainingArrayLayers;
-    range.aspectMask = vk::ImageAspectFlagBits::eColor;
-
-    imageBarrier.subresourceRange = range;
-
-    imageBarrier.image = image;
-
-    vk::DependencyInfo dependencyInfo;
-    dependencyInfo.imageMemoryBarrierCount = 1;
-    dependencyInfo.pImageMemoryBarriers = &imageBarrier;
-    cmd.pipelineBarrier2(dependencyInfo);
 }
