@@ -1,8 +1,15 @@
 #include "engine.hpp"
 
 #include <VkBootstrap.h>
+#include <vulkan/vulkan_core.h>
+
+#include <vulkan/vulkan_enums.hpp>
+#include <vulkan/vulkan_raii.hpp>
+#include <vulkan/vulkan_structs.hpp>
 
 #include "SDL3/SDL_vulkan.h"
+#include "raii.hpp"
+#include "types.hpp"
 void Engine::initWindow() { window.init(initConfig); }
 
 void Engine::initVulkan() {
@@ -238,4 +245,44 @@ void Engine::submitFrame() {
     }
 
     frameCounter++;
+}
+
+Texture* Engine::createTexture(Size size, VkImageUsageFlags usage,
+                               TextureFormat format) {
+    Texture* texture = texturePool.allocate();
+
+    texture->size = size;
+    texture->format = format;
+    texture->sampler = TextureSampler::LINEAR;
+
+    VkImageCreateInfo imagecreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
+    imagecreateInfo.format = (VkFormat)format;
+    imagecreateInfo.imageType = VK_IMAGE_TYPE_2D;
+    imagecreateInfo.extent = {.width = size.w, .height = size.h, .depth = 1};
+    imagecreateInfo.mipLevels = 1;
+    imagecreateInfo.arrayLayers = 1;
+    imagecreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imagecreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imagecreateInfo.usage =
+        usage | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+    VmaAllocationCreateInfo vmaAlloc = {
+        .usage = VMA_MEMORY_USAGE_GPU_ONLY,
+        .requiredFlags =
+            VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)};
+
+    texture->image.init(vma, imagecreateInfo, vmaAlloc);
+
+    vk::ImageViewCreateInfo viewCreateInfo{};
+    viewCreateInfo.image = texture->image;
+    viewCreateInfo.format = vk::Format(format);
+    viewCreateInfo.subresourceRange.layerCount = 1;
+    viewCreateInfo.subresourceRange.aspectMask =
+        vk::ImageAspectFlagBits::eColor;
+    texture->imageView = device.createImageView(viewCreateInfo);
+
+    texture->bindPoint = bindings.bindTexture(texture->imageView);
+
+    return texture;
 }

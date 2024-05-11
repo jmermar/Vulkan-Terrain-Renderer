@@ -4,6 +4,7 @@
 #include "binding.hpp"
 #include "commands.hpp"
 #include "gpu_resources.hpp"
+#include "memory.hpp"
 #include "raii.hpp"
 #include "types.hpp"
 class Window {
@@ -88,6 +89,10 @@ class Engine {
 
     GlobalBinding bindings;
 
+    Pool<StorageBuffer, 4096> bufferPool;
+    Pool<Texture, 4096> texturePool;
+    Pool<Mesh, 4096> meshPool;
+
     void initWindow();
     void initVulkan();
     void reloadSwapchain();
@@ -106,4 +111,8 @@ class Engine {
     vk::Image getFrameImage() { return swapchain.images[imageIndex]; }
 
     void submitFrame();
+
+    Texture* createTexture(Size size, VkImageUsageFlags usage,
+                           TextureFormat format);
+    void freeTexture(Texture* t) { texturePool.destroy(t); }
 };

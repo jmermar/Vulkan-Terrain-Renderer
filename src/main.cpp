@@ -1,4 +1,5 @@
 #include "engine.hpp"
+#include "memory.hpp"
 int main() {
     EngineInitConfig initConfig;
     initConfig.appName = "Vulkan Terrain";
@@ -6,6 +7,10 @@ int main() {
     initConfig.useImGUI = false;
     initConfig.screenSize = {.w = 1920, .h = 1080};
     Engine engine(initConfig);
+
+    auto texture =
+        engine.createTexture({.w = 256, .h = 256}, 0, TextureFormat::RGBA16);
+
     while (!engine.shouldClose()) {
         engine.update();
 
