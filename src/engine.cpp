@@ -192,8 +192,6 @@ CommandBuffer Engine::initFrame() {
     auto cmd = CommandBuffer(frame.commandBuffer);
     cmd.begin();
 
-    bufferWriter.updateWrites(cmd);
-
     frame.deletionQueue.clear();
     frame.deletionQueue = std::move(deletionQueue);
     return cmd;
@@ -326,4 +324,45 @@ Texture* Engine::createTexture(Size size, TextureFormat format,
     texture->bindPoint = bindings.bindTexture(texture->imageView, sampling);
 
     return texture;
+}
+
+CPUBuffer* Engine::createCpuBuffer(size_t size) {
+    VkBufferCreateInfo bufferInfo = {.sType =
+                                         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+    bufferInfo.pNext = nullptr;
+    bufferInfo.size = size;
+
+    bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+
+    VmaAllocationCreateInfo vmaAllocInfo = {};
+    vmaAllocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+    vmaAllocInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+
+    auto buffer = cpuBufferPool.allocate();
+
+    buffer->buffer = raii::Buffer(vma, bufferInfo, vmaAllocInfo);
+    buffer->size = size;
+
+    return buffer;
+}
+
+StorageBuffer* Engine::createStorageBuffer(uint32_t size) {
+    VkBufferCreateInfo bufferInfo = {.sType =
+                                         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+    bufferInfo.pNext = nullptr;
+    bufferInfo.size = size;
+
+    bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                       VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+
+    VmaAllocationCreateInfo vmaallocInfo = {};
+    vmaallocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+    vmaallocInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+    auto buffer = bufferPool.allocate();
+    buffer->buffer = raii::Buffer(vma, bufferInfo, vmaallocInfo);
+    buffer->size = size;
+    buffer->bindPoint = bindings.bindStorageBuffer(buffer->buffer);
+
+    return buffer;
 }

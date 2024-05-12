@@ -23,6 +23,15 @@ class CommandBuffer {
                         vk::PipelineStageFlagBits2::eAllCommands);
     }
 
+    void copyBufferToBuffer(StorageBuffer* dst, vk::Buffer src,
+                            uint32_t srcStart, uint32_t dstStart, size_t size);
+
+    void copyToTexture(Texture* t, vk::Buffer buffer,
+                       vk::PipelineStageFlagBits2 srcStage =
+                           vk::PipelineStageFlagBits2::eAllCommands,
+                       vk::PipelineStageFlagBits2 dstStage =
+                           vk::PipelineStageFlagBits2::eAllCommands);
+
    public:
     inline void transitionTexture(Texture* texture, vk::ImageLayout srcLayout,
                                   vk::PipelineStageFlagBits2 srcStage,
@@ -38,13 +47,38 @@ class CommandBuffer {
                         vk::PipelineStageFlagBits2::eAllCommands);
     }
 
-    void copyToTexture(Texture* t, vk::Buffer origin,
+    void copyToTexture(Texture* t, CPUBuffer* buffer,
                        vk::PipelineStageFlagBits2 srcStage =
                            vk::PipelineStageFlagBits2::eAllCommands,
                        vk::PipelineStageFlagBits2 dstStage =
-                           vk::PipelineStageFlagBits2::eAllCommands);
+                           vk::PipelineStageFlagBits2::eAllCommands) {
+        copyToTexture(t, buffer->buffer, srcStage, dstStage);
+    }
+
+    void copyToTexture(Texture* t, StorageBuffer* buffer,
+                       vk::PipelineStageFlagBits2 srcStage =
+                           vk::PipelineStageFlagBits2::eAllCommands,
+                       vk::PipelineStageFlagBits2 dstStage =
+                           vk::PipelineStageFlagBits2::eAllCommands) {
+        copyToTexture(t, buffer->buffer, srcStage, dstStage);
+    }
+
+    void memoryBarrier(vk::PipelineStageFlags2 srcStage,
+                       vk::AccessFlags2 srcAccess,
+                       vk::PipelineStageFlags2 dstStage,
+                       vk::AccessFlags2 dstAccess);
 
     void copyTextureToTexture(Texture* src, Texture* dst);
+
+    void copyBufferToBuffer(StorageBuffer* dst, StorageBuffer* src,
+                            uint32_t srcStart, uint32_t dstStart, size_t size) {
+        copyBufferToBuffer(dst, src->buffer, srcStart, dstStart, size);
+    }
+
+    void copyBufferToBuffer(StorageBuffer* dst, CPUBuffer* src,
+                            uint32_t srcStart, uint32_t dstStart, size_t size) {
+        copyBufferToBuffer(dst, src->buffer, srcStart, dstStart, size);
+    }
 
     void clearImage(vk::Image image, float r, float g, float b, float a);
 

@@ -1,43 +1,59 @@
 #include "gpu_resources.hpp"
 
+#include <cassert>
 #include <stdexcept>
 
 #include "engine.hpp"
-raii::Buffer createStagingBuffer(raii::VMA& vma, void* data, size_t size) {
-    VkBufferCreateInfo bufferInfo = {.sType =
-                                         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-    bufferInfo.pNext = nullptr;
-    bufferInfo.size = size;
-
-    bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-
-    VmaAllocationCreateInfo vmaAllocInfo = {};
-    vmaAllocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-    vmaAllocInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
-
-    return raii::Buffer(vma, bufferInfo, vmaAllocInfo);
-}  // namespace gpu_resources
-
+#include "helpers.hpp"
 void BufferWriter::updateWrites(CommandBuffer& cmd) {
+    cmd.memoryBarrier(
+        vk::PipelineStageFlagBits2::eAllCommands,
+        vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
+        vk::PipelineStageFlagBits2::eTransfer,
+        vk::AccessFlagBits2::eMemoryWrite);
+
     for (auto& [texture, buffer] : textureWrites) {
         cmd.transitionTexture(texture, vk::ImageLayout::eUndefined,
                               vk::ImageLayout::eTransferDstOptimal);
         cmd.copyToTexture(texture, buffer);
-        engine.deletionQueue.rawBuffers.push_back(std::move(buffer));
+        engine.destroyCpuBuffer(buffer);
     }
     textureWrites.clear();
+
+    for (auto& [buffer, start, size, upload] : bufferWrites) {
+        cmd.copyBufferToBuffer(buffer, upload, start, 0, size);
+        engine.destroyCpuBuffer(upload);
+    }
+
+    bufferWrites.clear();
+
+    cmd.memoryBarrier(
+        vk::PipelineStageFlagBits2::eTransfer,
+        vk::AccessFlagBits2::eMemoryWrite,
+        vk::PipelineStageFlagBits2::eAllCommands,
+        vk::AccessFlagBits2::eMemoryWrite | vk::AccessFlagBits2::eMemoryRead);
 }
 
-void BufferWriter::enqueueTextureWrite(Texture* tex, void* data,
-                                       uint32_t size) {
-    const auto numPixels = tex->size.w * tex->size.h;
-    if (tex->format == TextureFormat::RGBA8 && size != numPixels * 4) {
-        throw std::runtime_error("Texture size and buffer size dont match!");
-    } else if (tex->format == TextureFormat::RGBA16 && size != numPixels * 8) {
-        throw std::runtime_error("Texture size and buffer size dont match!");
-    }
-    auto upload = createStagingBuffer(engine.vma, data, size);
-    memcpy(upload.allocInfo.pMappedData, data, size);
+void BufferWriter::enqueueTextureWrite(Texture* tex, void* data) {
+    const auto size =
+        helpers::getTextureSizeFromSizeAndFormat(tex->size, tex->format);
 
-    textureWrites.push_back({.texture = tex, .buffer = std::move(upload)});
+    auto upload = engine.createCpuBuffer(size);
+    engine.updateCPUBuffer(upload, data, size);
+
+    textureWrites.push_back({.texture = tex, .buffer = upload});
+}
+
+void BufferWriter::enqueueBufferWrite(StorageBuffer* buffer, void* data,
+                                      uint32_t start, size_t size) {
+    assert(data);
+    assert(start + size <= buffer->size);
+
+    auto upload = engine.createCpuBuffer(size);
+    engine.updateCPUBuffer(upload, data, size);
+
+    bufferWrites.push_back({.buffer = buffer,
+                            .start = start,
+                            .size = size,
+                            .uploadBuffer = upload});
 }

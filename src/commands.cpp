@@ -57,6 +57,21 @@ void CommandBuffer::copyToTexture(Texture* t, vk::Buffer origin,
                           vk::ImageLayout::eTransferDstOptimal, {copyRegion});
 }
 
+void CommandBuffer::memoryBarrier(vk::PipelineStageFlags2 srcStage,
+                                  vk::AccessFlags2 srcAccess,
+                                  vk::PipelineStageFlags2 dstStage,
+                                  vk::AccessFlags2 dstAccess) {
+    vk::MemoryBarrier2 memoryBarrier;
+    memoryBarrier.srcAccessMask = srcAccess;
+    memoryBarrier.dstAccessMask = dstAccess;
+    memoryBarrier.srcStageMask = srcStage;
+    memoryBarrier.dstStageMask = dstStage;
+    vk::DependencyInfo dependencyInfo;
+    dependencyInfo.memoryBarrierCount = 1;
+    dependencyInfo.pMemoryBarriers = &memoryBarrier;
+    cmd.pipelineBarrier2(dependencyInfo);
+}
+
 void CommandBuffer::copyTextureToTexture(Texture* src, Texture* dst) {
     vk::ImageBlit2 region;
     region.srcSubresource.layerCount = 1;
@@ -81,6 +96,22 @@ void CommandBuffer::copyTextureToTexture(Texture* src, Texture* dst) {
     blitInfo.dstImageLayout = vk::ImageLayout::eTransferDstOptimal;
 
     cmd.blitImage2(blitInfo);
+}
+
+void CommandBuffer::copyBufferToBuffer(StorageBuffer* dst, vk::Buffer src,
+                                       uint32_t srcStart, uint32_t dstStart,
+                                       size_t size) {
+    vk::CopyBufferInfo2 copyInfo;
+    copyInfo.srcBuffer = src;
+    copyInfo.dstBuffer = dst->buffer;
+
+    vk::BufferCopy2 region;
+    region.srcOffset = srcStart;
+    region.dstOffset = dstStart;
+    region.size = size;
+    copyInfo.regionCount = 1;
+    copyInfo.pRegions = &region;
+    cmd.copyBuffer2(copyInfo);
 }
 
 void CommandBuffer::clearImage(vk::Image image, float r, float g, float b,

@@ -26,6 +26,12 @@ struct Mesh {
     raii::Buffer vertices{};
     raii::Buffer indices{};
 };
+
+struct CPUBuffer {
+    size_t size{};
+    raii::Buffer buffer;
+};
+
 class Engine;
 class CommandBuffer;
 class BufferWriter {
@@ -34,15 +40,27 @@ class BufferWriter {
    private:
     struct TextureWriteOperation {
         Texture* texture;
-        raii::Buffer buffer;
+        CPUBuffer* buffer;
+    };
+
+    struct BufferWrite {
+        StorageBuffer* buffer{};
+        uint32_t start{};
+        size_t size{};
+        CPUBuffer* uploadBuffer;
     };
 
     std::vector<TextureWriteOperation> textureWrites;
+    std::vector<BufferWrite> bufferWrites;
 
     Engine& engine;
+
+   public:
     BufferWriter(Engine& engine) : engine(engine) {}
 
     void updateWrites(CommandBuffer& cmd);
 
-    void enqueueTextureWrite(Texture* tex, void* data, uint32_t size);
+    void enqueueTextureWrite(Texture* tex, void* data);
+    void enqueueBufferWrite(StorageBuffer* buffer, void* data, uint32_t start,
+                            size_t size);
 };

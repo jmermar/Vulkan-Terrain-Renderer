@@ -1,6 +1,8 @@
 #pragma once
 #include <SDL3/SDL.h>
 
+#include <cassert>
+
 #include "binding.hpp"
 #include "commands.hpp"
 #include "gpu_resources.hpp"
@@ -36,7 +38,6 @@ class Window {
 
 class Engine {
    private:
-    friend class BufferWriter;
     // types
 
     struct DeletionQueue {
@@ -109,8 +110,7 @@ class Engine {
     Pool<StorageBuffer, 4096> bufferPool;
     Pool<Texture, 4096> texturePool;
     Pool<Mesh, 4096> meshPool;
-
-    BufferWriter bufferWriter{*this};
+    Pool<CPUBuffer, 4096> cpuBufferPool;
 
     DeletionQueue deletionQueue;
 
@@ -134,15 +134,25 @@ class Engine {
     Texture* createTexture(Size size, TextureFormat format,
                            TextureSampler sampling = TextureSampler::NEAREST,
                            VkImageUsageFlags usage = 0);
+    CPUBuffer* createCpuBuffer(size_t size);
+    StorageBuffer* createStorageBuffer(uint32_t size);
     void freeTexture(Texture* t) {
         deletionQueue.textures.push_back(std::move(*t));
         texturePool.destroy(t);
     }
 
-    void writeImage(Texture* texture, void* data) {
-        int size = texture->size.w * texture->size.h *
-                   (texture->format == TextureFormat::RGBA16 ? 8 : 4);
+    void updateCPUBuffer(CPUBuffer* buffer, void* data, size_t size) {
+        assert(buffer->size == size);
+        memcpy(buffer->buffer.allocInfo.pMappedData, data, size);
+    }
 
-        bufferWriter.enqueueTextureWrite(texture, data, size);
+    void destroyCpuBuffer(CPUBuffer* buffer) {
+        deletionQueue.rawBuffers.push_back(std::move(buffer->buffer));
+        cpuBufferPool.destroy(buffer);
+    }
+
+    void deleteStorageBuffer(StorageBuffer* buffer) {
+        deletionQueue.buffers.push_back(std::move(*buffer));
+        bufferPool.destroy(buffer);
     }
 };
