@@ -10,7 +10,9 @@ class Pool {
     std::array<T, SIZE> data;
     bool free[SIZE];
 
-    uint32_t getIndex(T* elem) { return (uint64_t)elem - (uint64_t)&data[0]; }
+    uint32_t getIndex(T* elem) {
+        return ((uint64_t)elem - (uint64_t)&data[0]) / sizeof(T);
+    }
 
    public:
     Pool() { memset(free, 1, SIZE); }

@@ -187,18 +187,55 @@ CommandBuffer Engine::initFrame() {
         frameCounter++;
         return vk::CommandBuffer(nullptr);
     }
-
     imageIndex = result.second;
 
     auto cmd = CommandBuffer(frame.commandBuffer);
     cmd.begin();
+
+    bufferWriter.updateWrites(cmd);
+
+    frame.deletionQueue.clear();
+    frame.deletionQueue = std::move(deletionQueue);
     return cmd;
 }
 
-void Engine::submitFrame() {
+void Engine::submitFrame(Texture* backbuffer) {
     auto& frame = frames[frameCounter % FRAMES_IN_FLIGHT];
 
     auto cmd = CommandBuffer(frame.commandBuffer);
+    auto image = swapchain.images[imageIndex];
+    if (backbuffer != nullptr) {
+        cmd.transitionImage(backbuffer->image, vk::ImageLayout::eUndefined,
+                            vk::ImageLayout::eTransferSrcOptimal);
+        cmd.transitionImage(image, vk::ImageLayout::eUndefined,
+                            vk::ImageLayout::eTransferDstOptimal);
+
+        vk::ImageBlit2 region;
+        region.srcSubresource.layerCount = 1;
+        region.srcSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+        region.srcOffsets[0] = {.x = 0, .y = 0, .z = 0};
+        region.srcOffsets[1] = {.x = (int32_t)backbuffer->size.w,
+                                .y = (int32_t)backbuffer->size.h,
+                                .z = (int32_t)1};
+
+        region.dstSubresource.layerCount = 1;
+        region.dstSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+        region.dstOffsets[0] = {.x = 0, .y = 0, .z = 0};
+        region.dstOffsets[1] = {.x = (int32_t)windowSize.w,
+                                .y = (int32_t)windowSize.h,
+                                .z = (int32_t)1};
+
+        vk::BlitImageInfo2 blitInfo;
+        blitInfo.srcImage = backbuffer->image;
+        blitInfo.srcImageLayout = vk::ImageLayout::eTransferSrcOptimal;
+        blitInfo.filter = vk::Filter::eNearest;
+        blitInfo.regionCount = 1;
+        blitInfo.pRegions = &region;
+        blitInfo.dstImage = image;
+        blitInfo.dstImageLayout = vk::ImageLayout::eTransferDstOptimal;
+
+        frame.commandBuffer.blitImage2(blitInfo);
+    }
 
     cmd.transitionImage(swapchain.images[imageIndex],
                         vk::ImageLayout::eUndefined,
@@ -247,13 +284,14 @@ void Engine::submitFrame() {
     frameCounter++;
 }
 
-Texture* Engine::createTexture(Size size, VkImageUsageFlags usage,
-                               TextureFormat format) {
+Texture* Engine::createTexture(Size size, TextureFormat format,
+                               TextureSampler sampling,
+                               VkImageUsageFlags usage) {
     Texture* texture = texturePool.allocate();
 
     texture->size = size;
     texture->format = format;
-    texture->sampler = TextureSampler::LINEAR;
+    texture->sampler = sampling;
 
     VkImageCreateInfo imagecreateInfo = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
@@ -264,8 +302,9 @@ Texture* Engine::createTexture(Size size, VkImageUsageFlags usage,
     imagecreateInfo.arrayLayers = 1;
     imagecreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     imagecreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-    imagecreateInfo.usage =
-        usage | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    imagecreateInfo.usage = usage | VK_IMAGE_USAGE_SAMPLED_BIT |
+                            VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                            VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
     VmaAllocationCreateInfo vmaAlloc = {
         .usage = VMA_MEMORY_USAGE_GPU_ONLY,
@@ -278,11 +317,13 @@ Texture* Engine::createTexture(Size size, VkImageUsageFlags usage,
     viewCreateInfo.image = texture->image;
     viewCreateInfo.format = vk::Format(format);
     viewCreateInfo.subresourceRange.layerCount = 1;
+    viewCreateInfo.subresourceRange.levelCount = 1;
     viewCreateInfo.subresourceRange.aspectMask =
         vk::ImageAspectFlagBits::eColor;
+    viewCreateInfo.viewType = vk::ImageViewType::e2D;
     texture->imageView = device.createImageView(viewCreateInfo);
 
-    texture->bindPoint = bindings.bindTexture(texture->imageView);
+    texture->bindPoint = bindings.bindTexture(texture->imageView, sampling);
 
     return texture;
 }

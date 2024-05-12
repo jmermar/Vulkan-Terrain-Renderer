@@ -48,10 +48,11 @@ class VMA : NoCopy {
 class Buffer : NoCopy {
    private:
     vk::Buffer buffer{};
-    VmaAllocator vma{};
-    VmaAllocation alloc{};
 
    public:
+    VmaAllocationInfo allocInfo{};
+    VmaAllocator vma{};
+    VmaAllocation alloc{};
     void free() {
         if (vma) {
             vmaDestroyBuffer(vma, buffer, alloc);
@@ -67,7 +68,7 @@ class Buffer : NoCopy {
         VkBuffer b{};
         if (VK_SUCCESS == vmaCreateBuffer(vma, &bufferCreateInfo,
                                           &allocCreateInfo, &b, &alloc,
-                                          nullptr)) {
+                                          &allocInfo)) {
             this->vma = vma;
             buffer = b;
         }
@@ -86,6 +87,7 @@ class Buffer : NoCopy {
         alloc = other.alloc;
         buffer = other.buffer;
         vma = other.vma;
+        allocInfo = other.allocInfo;
 
         other.alloc = 0;
         other.vma = 0;
@@ -97,6 +99,7 @@ class Buffer : NoCopy {
         alloc = other.alloc;
         buffer = other.buffer;
         vma = other.vma;
+        allocInfo = other.allocInfo;
 
         other.alloc = 0;
         other.vma = 0;
@@ -111,10 +114,11 @@ class Buffer : NoCopy {
 class Image : NoCopy {
    private:
     vk::Image image{};
-    VmaAllocator vma{};
-    VmaAllocation alloc{};
 
    public:
+    VmaAllocator vma{};
+    VmaAllocation alloc{};
+    VmaAllocationInfo allocInfo{};
     void free() {
         if (vma) {
             vmaDestroyImage(vma, image, alloc);
@@ -130,7 +134,7 @@ class Image : NoCopy {
         VkImage i{};
         if (VK_SUCCESS == vmaCreateImage(vma, &imagecreateInfo,
                                          &allocCreateInfo, &i, &alloc,
-                                         nullptr)) {
+                                         &allocInfo)) {
             this->vma = vma;
             image = i;
         }
@@ -149,6 +153,7 @@ class Image : NoCopy {
         alloc = other.alloc;
         image = other.image;
         vma = other.vma;
+        allocInfo = other.allocInfo;
 
         other.alloc = 0;
         other.vma = 0;
@@ -157,11 +162,11 @@ class Image : NoCopy {
 
     Image& operator=(Image&& other) {
         free();
-        alloc = other.alloc;
         image = other.image;
+        alloc = other.alloc;
         vma = other.vma;
+        allocInfo = other.allocInfo;
 
-        other.alloc = 0;
         other.vma = 0;
         other.image = vk::Image();
 

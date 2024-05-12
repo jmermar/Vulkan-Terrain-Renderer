@@ -2,6 +2,7 @@
 #include <vector>
 
 #include "gpu_resources.hpp"
+#include "types.hpp"
 class GlobalBinding {
     friend class Engine;
 
@@ -22,8 +23,9 @@ class GlobalBinding {
               const vk::PhysicalDeviceProperties& properties);
 
    public:
-    BindPoint<Texture> bindTexture(vk::ImageView texture);
-    BindPoint<StorageBuffer> bindStorageBuffer(vk::Buffer* storageBuffer);
+    BindPoint<Texture> bindTexture(vk::ImageView texture,
+                                   TextureSampler sampling);
+    BindPoint<StorageBuffer> bindStorageBuffer(vk::Buffer storageBuffer);
 
     void removeBind(BindPoint<Texture> bindPoint) {
         if (!bindPoint.bind) return;

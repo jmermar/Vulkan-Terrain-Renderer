@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include "types.hpp"
+
 constexpr uint32_t TEXTURE_BIND = 0;
 constexpr uint32_t STORAGE_BIND = 1;
 
@@ -81,18 +83,20 @@ void GlobalBinding::init(const vk::raii::Device& device,
     linearSampler = device.createSampler(sampler);
 }
 
-BindPoint<Texture> GlobalBinding::bindTexture(vk::ImageView texture) {
+BindPoint<Texture> GlobalBinding::bindTexture(vk::ImageView texture,
+                                              TextureSampler sampling) {
     uint32_t bindPoint = getFirstFree(storageBinds);
     vk::WriteDescriptorSet write;
 
     vk::DescriptorImageInfo imageInfo;
 
     imageInfo.imageView = texture;
-    imageInfo.sampler = nearestSampler;
+    imageInfo.sampler =
+        sampling == TextureSampler::LINEAR ? linearSampler : nearestSampler;
     imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 
     write.dstSet = descriptorSet;
-    write.descriptorType = vk::DescriptorType::eSampledImage;
+    write.descriptorType = vk::DescriptorType::eCombinedImageSampler;
     write.dstBinding = TEXTURE_BIND;
     write.dstArrayElement = bindPoint;
     write.descriptorCount = 1;
@@ -104,7 +108,7 @@ BindPoint<Texture> GlobalBinding::bindTexture(vk::ImageView texture) {
 }
 
 BindPoint<StorageBuffer> GlobalBinding::bindStorageBuffer(
-    vk::Buffer* storageBuffer) {
+    vk::Buffer storageBuffer) {
     uint32_t bindPoint = getFirstFree(storageBinds);
     vk::WriteDescriptorSet write;
 
@@ -112,6 +116,7 @@ BindPoint<StorageBuffer> GlobalBinding::bindStorageBuffer(
 
     bufferInfo.offset = 0;
     bufferInfo.range = VK_WHOLE_SIZE;
+    bufferInfo.buffer = storageBuffer;
 
     write.dstSet = descriptorSet;
     write.descriptorType = vk::DescriptorType::eStorageBuffer;

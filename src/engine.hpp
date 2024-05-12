@@ -36,7 +36,22 @@ class Window {
 
 class Engine {
    private:
+    friend class BufferWriter;
     // types
+
+    struct DeletionQueue {
+        std::vector<Texture> textures;
+        std::vector<StorageBuffer> buffers;
+        std::vector<Mesh> meshes;
+        std::vector<raii::Buffer> rawBuffers;
+
+        void clear() {
+            textures.clear();
+            buffers.clear();
+            meshes.clear();
+            rawBuffers.clear();
+        }
+    };
 
     struct Swapchain {
         std::vector<vk::Image> images;
@@ -52,6 +67,8 @@ class Engine {
         vk::raii::Semaphore swapchainSemaphore{nullptr},
             renderSemaphore{nullptr};
         vk::raii::Fence renderFence{nullptr};
+
+        DeletionQueue deletionQueue;
     };
 
     // Info variables
@@ -93,6 +110,10 @@ class Engine {
     Pool<Texture, 4096> texturePool;
     Pool<Mesh, 4096> meshPool;
 
+    BufferWriter bufferWriter{*this};
+
+    DeletionQueue deletionQueue;
+
     void initWindow();
     void initVulkan();
     void reloadSwapchain();
@@ -108,11 +129,20 @@ class Engine {
 
     CommandBuffer initFrame();
 
-    vk::Image getFrameImage() { return swapchain.images[imageIndex]; }
+    void submitFrame(Texture* backbuffer);
 
-    void submitFrame();
+    Texture* createTexture(Size size, TextureFormat format,
+                           TextureSampler sampling = TextureSampler::NEAREST,
+                           VkImageUsageFlags usage = 0);
+    void freeTexture(Texture* t) {
+        deletionQueue.textures.push_back(std::move(*t));
+        texturePool.destroy(t);
+    }
 
-    Texture* createTexture(Size size, VkImageUsageFlags usage,
-                           TextureFormat format);
-    void freeTexture(Texture* t) { texturePool.destroy(t); }
+    void writeImage(Texture* texture, void* data) {
+        int size = texture->size.w * texture->size.h *
+                   (texture->format == TextureFormat::RGBA16 ? 8 : 4);
+
+        bufferWriter.enqueueTextureWrite(texture, data, size);
+    }
 };
