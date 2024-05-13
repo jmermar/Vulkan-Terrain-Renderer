@@ -4,7 +4,6 @@
 
 #include "raii.hpp"
 #include "types.hpp"
-
 struct StorageBuffer {
     BindPoint<StorageBuffer> bindPoint{};
     raii::Buffer buffer{};
@@ -23,6 +22,7 @@ struct Texture {
 
 struct Mesh {
     size_t indicesCount{};
+    size_t verticesSize{};
     raii::Buffer vertices{};
     raii::Buffer indices{};
 };
@@ -35,8 +35,6 @@ struct CPUBuffer {
 class Engine;
 class CommandBuffer;
 class BufferWriter {
-    friend class Engine;
-
    private:
     struct TextureWriteOperation {
         Texture* texture;
@@ -50,8 +48,15 @@ class BufferWriter {
         CPUBuffer* uploadBuffer;
     };
 
+    struct MeshWrite {
+        Mesh* mesh;
+        CPUBuffer* verticesUpload;
+        CPUBuffer* indicesUpload;
+    };
+
     std::vector<TextureWriteOperation> textureWrites;
     std::vector<BufferWrite> bufferWrites;
+    std::vector<MeshWrite> meshWrites;
 
     Engine& engine;
 
@@ -63,4 +68,14 @@ class BufferWriter {
     void enqueueTextureWrite(Texture* tex, void* data);
     void enqueueBufferWrite(StorageBuffer* buffer, void* data, uint32_t start,
                             size_t size);
+
+    void enqueueMeshWrite(Mesh* mesh, void* data, uint32_t dataSize,
+                          std::span<uint32_t> indices);
+
+    template <typename T>
+    void enqueueMeshWrite(Mesh* mesh, std::span<T> vertices,
+                          std::span<uint32_t> indices) {
+        enqueueMeshWrite(mesh, vertices.data(), vertices.size() * sizeof(T),
+                         indices);
+    }
 };

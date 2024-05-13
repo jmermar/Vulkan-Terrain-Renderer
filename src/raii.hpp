@@ -1,7 +1,7 @@
 #pragma once
 #include <vma/vk_mem_alloc.h>
 
-#include <vulkan/vulkan.hpp>
+#include "types.hpp"
 namespace raii {
 class NoCopy {
    public:

@@ -80,6 +80,8 @@ class CommandBuffer {
         copyBufferToBuffer(dst, src->buffer, srcStart, dstStart, size);
     }
 
+    void copyToMesh(Mesh* mesh, CPUBuffer* vertices, CPUBuffer* indices);
+
     void clearImage(vk::Image image, float r, float g, float b, float a);
 
     bool isValid() { return cmd != 0; }

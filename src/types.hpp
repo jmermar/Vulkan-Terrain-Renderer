@@ -24,7 +24,8 @@ struct Rect {
 };
 
 enum class PresentationFormat : uint32_t {
-    Immediate = VK_PRESENT_MODE_IMMEDIATE_KHR
+    Immediate = VK_PRESENT_MODE_IMMEDIATE_KHR,
+    Mailbox = VK_PRESENT_MODE_MAILBOX_KHR
 };
 
 struct EngineInitConfig {

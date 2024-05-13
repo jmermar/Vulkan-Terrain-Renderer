@@ -2,6 +2,7 @@
 #include <SDL3/SDL.h>
 
 #include <cassert>
+#include <span>
 
 #include "binding.hpp"
 #include "commands.hpp"
@@ -19,7 +20,8 @@ class Window {
         free();
         size = initConfig.screenSize;
         window = SDL_CreateWindow(initConfig.appName, initConfig.screenSize.w,
-                                  initConfig.screenSize.h, SDL_WINDOW_VULKAN);
+                                  initConfig.screenSize.h,
+                                  SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
     }
     void free() {
         if (window) {
@@ -119,6 +121,8 @@ class Engine {
     void reloadSwapchain();
     void initFrameData();
 
+    void regenerate();
+
    public:
     Engine(const EngineInitConfig& initConfig);
     ~Engine();
@@ -136,14 +140,17 @@ class Engine {
                            VkImageUsageFlags usage = 0);
     CPUBuffer* createCpuBuffer(size_t size);
     StorageBuffer* createStorageBuffer(uint32_t size);
-    void freeTexture(Texture* t) {
-        deletionQueue.textures.push_back(std::move(*t));
-        texturePool.destroy(t);
-    }
+
+    Mesh* createMesh(size_t verticesSize, uint32_t indicesCount);
 
     void updateCPUBuffer(CPUBuffer* buffer, void* data, size_t size) {
         assert(buffer->size == size);
         memcpy(buffer->buffer.allocInfo.pMappedData, data, size);
+    }
+
+    void freeTexture(Texture* t) {
+        deletionQueue.textures.push_back(std::move(*t));
+        texturePool.destroy(t);
     }
 
     void destroyCpuBuffer(CPUBuffer* buffer) {
@@ -151,8 +158,13 @@ class Engine {
         cpuBufferPool.destroy(buffer);
     }
 
-    void deleteStorageBuffer(StorageBuffer* buffer) {
+    void destroyStorageBuffer(StorageBuffer* buffer) {
         deletionQueue.buffers.push_back(std::move(*buffer));
         bufferPool.destroy(buffer);
+    }
+
+    void destroyMesh(Mesh* mesh) {
+        deletionQueue.meshes.push_back(std::move(*mesh));
+        meshPool.destroy(mesh);
     }
 };

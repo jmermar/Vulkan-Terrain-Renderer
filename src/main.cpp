@@ -3,7 +3,7 @@
 int main() {
     EngineInitConfig initConfig;
     initConfig.appName = "Vulkan Terrain";
-    initConfig.presentation = PresentationFormat::Immediate;
+    initConfig.presentation = PresentationFormat::Mailbox;
     initConfig.useImGUI = false;
     initConfig.screenSize = {.w = 1920, .h = 1080};
     Engine engine(initConfig);
@@ -11,6 +11,7 @@ int main() {
         engine.createTexture({.w = 2, .h = 2}, TextureFormat::RGBA16);
 
     auto buffer = engine.createStorageBuffer(4 * 4 * 2);
+    auto mesh = engine.createMesh(sizeof(float) * 3, 3);
 
     BufferWriter bufferWriter{engine};
     int i = 0;
@@ -25,8 +26,12 @@ int main() {
         data[10] = UINT16_MAX * (0.5 + 0.5 * a);
 
         bufferWriter.enqueueBufferWrite(buffer, data, 0, 4 * 4 * 2);
+        float v[] = {0.f, 1.f, 0.f};
+        uint32_t i[] = {0, 1, 2};
+        bufferWriter.enqueueMeshWrite(mesh, std::span<float>(v),
+                                      std::span<uint32_t>(i));
 
-        // bufferWriter.enqueueTextureWrite(texture, data);
+        bufferWriter.enqueueTextureWrite(texture, data);
 
         auto cmd = engine.initFrame();
 

@@ -114,6 +114,25 @@ void CommandBuffer::copyBufferToBuffer(StorageBuffer* dst, vk::Buffer src,
     cmd.copyBuffer2(copyInfo);
 }
 
+void CommandBuffer::copyToMesh(Mesh* mesh, CPUBuffer* vertices,
+                               CPUBuffer* indices) {
+    vk::CopyBufferInfo2 copyInfo;
+    copyInfo.srcBuffer = vertices->buffer;
+    copyInfo.dstBuffer = mesh->vertices;
+
+    vk::BufferCopy2 region;
+    region.size = vertices->size;
+    copyInfo.regionCount = 1;
+    copyInfo.pRegions = &region;
+    cmd.copyBuffer2(copyInfo);
+
+    copyInfo.srcBuffer = indices->buffer;
+    copyInfo.dstBuffer = mesh->indices;
+
+    region.size = indices->size;
+    cmd.copyBuffer2(copyInfo);
+}
+
 void CommandBuffer::clearImage(vk::Image image, float r, float g, float b,
                                float a) {
     vk::ImageSubresourceRange range;

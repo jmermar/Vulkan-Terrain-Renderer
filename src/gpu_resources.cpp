@@ -27,6 +27,14 @@ void BufferWriter::updateWrites(CommandBuffer& cmd) {
 
     bufferWrites.clear();
 
+    for (auto& [mesh, vertices, indices] : meshWrites) {
+        cmd.copyToMesh(mesh, vertices, indices);
+        engine.destroyCpuBuffer(vertices);
+        engine.destroyCpuBuffer(indices);
+    }
+
+    meshWrites.clear();
+
     cmd.memoryBarrier(
         vk::PipelineStageFlagBits2::eTransfer,
         vk::AccessFlagBits2::eMemoryWrite,
@@ -56,4 +64,21 @@ void BufferWriter::enqueueBufferWrite(StorageBuffer* buffer, void* data,
                             .start = start,
                             .size = size,
                             .uploadBuffer = upload});
+}
+
+void BufferWriter::enqueueMeshWrite(Mesh* mesh, void* data, uint32_t dataSize,
+                                    std::span<uint32_t> indices) {
+    auto indicesSize = indices.size() * sizeof(uint32_t);
+    assert(data);
+    assert(dataSize == mesh->verticesSize);
+    assert(indices.size() == mesh->indicesCount);
+    auto verticesUpload = engine.createCpuBuffer(dataSize);
+    engine.updateCPUBuffer(verticesUpload, data, dataSize);
+
+    auto indicesUpload = engine.createCpuBuffer(indicesSize);
+    engine.updateCPUBuffer(indicesUpload, indices.data(), indicesSize);
+
+    meshWrites.push_back({.mesh = mesh,
+                          .verticesUpload = verticesUpload,
+                          .indicesUpload = indicesUpload});
 }

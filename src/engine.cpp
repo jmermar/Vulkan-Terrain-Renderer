@@ -88,6 +88,7 @@ void Engine::initVulkan() {
 }
 
 void Engine::reloadSwapchain() {
+    swapchain.swapchain = vk::raii::SwapchainKHR(nullptr);
     swapchain.images.clear();
     swapchain.imageViews.clear();
     auto vkbSwapchain =
@@ -150,6 +151,16 @@ void Engine::initFrameData() {
     }
 }
 
+void Engine::regenerate() {
+    int w, h;
+    SDL_GetWindowSize(window, &w, &h);
+
+    windowSize.w = w;
+    windowSize.h = h;
+
+    reloadSwapchain();
+}
+
 Engine::Engine(const EngineInitConfig& initConfig) {
     windowSize = initConfig.screenSize;
     this->initConfig = initConfig;
@@ -174,19 +185,25 @@ void Engine::update() {
 }
 
 CommandBuffer Engine::initFrame() {
+    if (shouldRegenerate) {
+        regenerate();
+        shouldRegenerate = false;
+    }
     auto& frame = frames[frameCounter % FRAMES_IN_FLIGHT];
     static_cast<void>(
         device.waitForFences({frame.renderFence}, true, 10000000000000));
     device.resetFences({frame.renderFence});
 
-    auto result = swapchain.swapchain.acquireNextImage(
-        10000000000000, frame.swapchainSemaphore);
-
-    if (result.first == vk::Result::eErrorOutOfDateKHR) {
+    std::pair<vk::Result, uint32_t> result;
+    try {
+        result = swapchain.swapchain.acquireNextImage(10000000000000,
+                                                      frame.swapchainSemaphore);
+    } catch (vk::OutOfDateKHRError& exc) {
         shouldRegenerate = true;
         frameCounter++;
         return vk::CommandBuffer(nullptr);
     }
+
     imageIndex = result.second;
 
     auto cmd = CommandBuffer(frame.commandBuffer);
@@ -273,9 +290,9 @@ void Engine::submitFrame(Texture* backbuffer) {
     presentInfo.waitSemaphoreCount = 1;
     presentInfo.pWaitSemaphores = &(*frame.renderSemaphore);
 
-    auto presentResult = graphicsQueue.presentKHR(presentInfo);
-
-    if (presentResult == vk::Result::eErrorOutOfDateKHR) {
+    try {
+        static_cast<void>(graphicsQueue.presentKHR(presentInfo));
+    } catch (vk::OutOfDateKHRError& exc) {
         shouldRegenerate = true;
     }
 
@@ -365,4 +382,35 @@ StorageBuffer* Engine::createStorageBuffer(uint32_t size) {
     buffer->bindPoint = bindings.bindStorageBuffer(buffer->buffer);
 
     return buffer;
+}
+
+Mesh* Engine::createMesh(size_t verticesSize, uint32_t indicesCount) {
+    auto mesh = meshPool.allocate();
+    mesh->indicesCount = indicesCount;
+    mesh->verticesSize = verticesSize;
+
+    VkBufferCreateInfo bufferInfo = {.sType =
+                                         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+    bufferInfo.pNext = nullptr;
+    bufferInfo.size = verticesSize;
+
+    bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                       VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
+                       VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+
+    VmaAllocationCreateInfo vmaallocInfo = {};
+    vmaallocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+    vmaallocInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+
+    mesh->vertices = raii::Buffer(vma, bufferInfo, vmaallocInfo);
+
+    bufferInfo.size = indicesCount * sizeof(uint32_t);
+
+    bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                       VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
+                       VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+
+    mesh->indices = raii::Buffer(vma, bufferInfo, vmaallocInfo);
+
+    return mesh;
 }
