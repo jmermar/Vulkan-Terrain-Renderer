@@ -7,10 +7,10 @@ int main() {
     initConfig.useImGUI = false;
     initConfig.screenSize = {.w = 1920, .h = 1080};
     Engine engine(initConfig);
-    auto texture =
-        engine.createTexture({.w = 2, .h = 2}, TextureFormat::RGBA16);
+    auto texture = engine.createTexture(
+        {.w = 256, .h = 256}, TextureFormat::RGBA16, TextureSampler::LINEAR, 4);
 
-    auto buffer = engine.createStorageBuffer(4 * 4 * 2);
+    auto buffer = engine.createStorageBuffer(256 * 256 * 4 * 2);
     auto mesh = engine.createMesh(sizeof(float) * 3, 3);
 
     BufferWriter bufferWriter{engine};

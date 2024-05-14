@@ -45,4 +45,7 @@ struct BindPoint {
     uint32_t bind;
 };
 
-enum class TextureSampler { NEAREST, LINEAR };
+enum class TextureSampler : uint32_t {
+    NEAREST = VK_FILTER_NEAREST,
+    LINEAR = VK_FILTER_LINEAR
+};

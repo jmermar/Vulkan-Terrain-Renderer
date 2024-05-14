@@ -11,14 +11,16 @@ class CommandBuffer {
 
     void begin();
 
-    void transitionImage(vk::Image image, vk::ImageLayout srcLayout,
+    void transitionImage(vk::Image image, uint32_t mipLevels,
+                         vk::ImageLayout srcLayout,
                          vk::PipelineStageFlagBits2 srcStage,
                          vk::ImageLayout dstLayout,
                          vk::PipelineStageFlagBits2 dstStage);
 
-    inline void transitionImage(vk::Image image, vk::ImageLayout srcLayout,
+    inline void transitionImage(vk::Image image, uint32_t mipLevels,
+                                vk::ImageLayout srcLayout,
                                 vk::ImageLayout dstLayout) {
-        transitionImage(image, srcLayout,
+        transitionImage(image, mipLevels, srcLayout,
                         vk::PipelineStageFlagBits2::eAllCommands, dstLayout,
                         vk::PipelineStageFlagBits2::eAllCommands);
     }
@@ -37,12 +39,12 @@ class CommandBuffer {
                                   vk::PipelineStageFlagBits2 srcStage,
                                   vk::ImageLayout dstLayout,
                                   vk::PipelineStageFlagBits2 dstStage) {
-        transitionImage(texture->image, srcLayout, srcStage, dstLayout,
-                        dstStage);
+        transitionImage(texture->image, texture->mipLevels, srcLayout, srcStage,
+                        dstLayout, dstStage);
     }
     inline void transitionTexture(Texture* texture, vk::ImageLayout srcLayout,
                                   vk::ImageLayout dstLayout) {
-        transitionImage(texture->image, srcLayout,
+        transitionImage(texture->image, texture->mipLevels, srcLayout,
                         vk::PipelineStageFlagBits2::eAllCommands, dstLayout,
                         vk::PipelineStageFlagBits2::eAllCommands);
     }
@@ -85,4 +87,6 @@ class CommandBuffer {
     void clearImage(vk::Image image, float r, float g, float b, float a);
 
     bool isValid() { return cmd != 0; }
+
+    void generateMipMapLevels(Texture* tex);
 };

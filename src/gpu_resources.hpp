@@ -18,6 +18,7 @@ struct Texture {
     Size size{};
     TextureFormat format{};
     TextureSampler sampler{};
+    uint32_t mipLevels{};
 };
 
 struct Mesh {

@@ -220,9 +220,11 @@ void Engine::submitFrame(Texture* backbuffer) {
     auto cmd = CommandBuffer(frame.commandBuffer);
     auto image = swapchain.images[imageIndex];
     if (backbuffer != nullptr) {
-        cmd.transitionImage(backbuffer->image, vk::ImageLayout::eUndefined,
+        cmd.transitionImage(backbuffer->image, vk::RemainingMipLevels,
+                            vk::ImageLayout::eUndefined,
                             vk::ImageLayout::eTransferSrcOptimal);
-        cmd.transitionImage(image, vk::ImageLayout::eUndefined,
+        cmd.transitionImage(image, vk::RemainingMipLevels,
+                            vk::ImageLayout::eUndefined,
                             vk::ImageLayout::eTransferDstOptimal);
 
         vk::ImageBlit2 region;
@@ -252,11 +254,9 @@ void Engine::submitFrame(Texture* backbuffer) {
         frame.commandBuffer.blitImage2(blitInfo);
     }
 
-    cmd.transitionImage(swapchain.images[imageIndex],
+    cmd.transitionImage(swapchain.images[imageIndex], vk::RemainingMipLevels,
                         vk::ImageLayout::eUndefined,
-                        vk::PipelineStageFlagBits2::eAllCommands,
-                        vk::ImageLayout::ePresentSrcKHR,
-                        vk::PipelineStageFlagBits2KHR::eAllCommands);
+                        vk::ImageLayout::ePresentSrcKHR);
 
     frame.commandBuffer.end();
 
@@ -300,20 +300,23 @@ void Engine::submitFrame(Texture* backbuffer) {
 }
 
 Texture* Engine::createTexture(Size size, TextureFormat format,
-                               TextureSampler sampling,
+                               TextureSampler sampling, uint32_t mipLevels,
                                VkImageUsageFlags usage) {
+    assert(mipLevels > 0 && mipLevels < 32);
+
     Texture* texture = texturePool.allocate();
 
     texture->size = size;
     texture->format = format;
     texture->sampler = sampling;
+    texture->mipLevels = mipLevels;
 
     VkImageCreateInfo imagecreateInfo = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
     imagecreateInfo.format = (VkFormat)format;
     imagecreateInfo.imageType = VK_IMAGE_TYPE_2D;
     imagecreateInfo.extent = {.width = size.w, .height = size.h, .depth = 1};
-    imagecreateInfo.mipLevels = 1;
+    imagecreateInfo.mipLevels = mipLevels;
     imagecreateInfo.arrayLayers = 1;
     imagecreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     imagecreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -332,7 +335,7 @@ Texture* Engine::createTexture(Size size, TextureFormat format,
     viewCreateInfo.image = texture->image;
     viewCreateInfo.format = vk::Format(format);
     viewCreateInfo.subresourceRange.layerCount = 1;
-    viewCreateInfo.subresourceRange.levelCount = 1;
+    viewCreateInfo.subresourceRange.levelCount = mipLevels;
     viewCreateInfo.subresourceRange.aspectMask =
         vk::ImageAspectFlagBits::eColor;
     viewCreateInfo.viewType = vk::ImageViewType::e2D;

@@ -137,7 +137,7 @@ class Engine {
 
     Texture* createTexture(Size size, TextureFormat format,
                            TextureSampler sampling = TextureSampler::NEAREST,
-                           VkImageUsageFlags usage = 0);
+                           uint32_t mipLevels = 1, VkImageUsageFlags usage = 0);
     CPUBuffer* createCpuBuffer(size_t size);
     StorageBuffer* createStorageBuffer(uint32_t size);
 

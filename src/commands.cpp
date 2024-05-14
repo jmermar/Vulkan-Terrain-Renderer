@@ -7,7 +7,8 @@ void CommandBuffer::begin() {
     cmd.begin(cmdBeginInfo);
 }
 
-void CommandBuffer::transitionImage(vk::Image image, vk::ImageLayout srcLayout,
+void CommandBuffer::transitionImage(vk::Image image, uint32_t mipLevels,
+                                    vk::ImageLayout srcLayout,
                                     vk::PipelineStageFlagBits2 srcStage,
                                     vk::ImageLayout dstLayout,
                                     vk::PipelineStageFlagBits2 dstStage) {
@@ -23,7 +24,7 @@ void CommandBuffer::transitionImage(vk::Image image, vk::ImageLayout srcLayout,
     imageBarrier.newLayout = dstLayout;
 
     vk::ImageSubresourceRange range;
-    range.levelCount = vk::RemainingMipLevels;
+    range.levelCount = mipLevels;
     range.layerCount = vk::RemainingArrayLayers;
     range.aspectMask = vk::ImageAspectFlagBits::eColor;
 
@@ -55,6 +56,8 @@ void CommandBuffer::copyToTexture(Texture* t, vk::Buffer origin,
 
     cmd.copyBufferToImage(origin, t->image,
                           vk::ImageLayout::eTransferDstOptimal, {copyRegion});
+
+    generateMipMapLevels(t);
 }
 
 void CommandBuffer::memoryBarrier(vk::PipelineStageFlags2 srcStage,
@@ -96,6 +99,8 @@ void CommandBuffer::copyTextureToTexture(Texture* src, Texture* dst) {
     blitInfo.dstImageLayout = vk::ImageLayout::eTransferDstOptimal;
 
     cmd.blitImage2(blitInfo);
+
+    generateMipMapLevels(dst);
 }
 
 void CommandBuffer::copyBufferToBuffer(StorageBuffer* dst, vk::Buffer src,
@@ -144,4 +149,56 @@ void CommandBuffer::clearImage(vk::Image image, float r, float g, float b,
     color.setFloat32({r, g, b, a});
     cmd.clearColorImage(image, vk::ImageLayout::eTransferDstOptimal, color,
                         range);
+}
+
+void CommandBuffer::generateMipMapLevels(Texture* tex) {
+    if (tex->mipLevels <= 1) {
+        return;
+    }
+    vk::ImageMemoryBarrier barrier{};
+    barrier.image = tex->image;
+    barrier.srcQueueFamilyIndex = vk::QueueFamilyIgnored;
+    barrier.dstQueueFamilyIndex = vk::QueueFamilyIgnored;
+    barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+    barrier.subresourceRange.levelCount = 1;
+
+    int32_t mipWidth = tex->size.w;
+    int32_t mipHeight = tex->size.h;
+
+    for (uint32_t i = 1; i < tex->mipLevels; i++) {
+        barrier.subresourceRange.baseMipLevel = i - 1;
+        barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
+        barrier.newLayout = vk::ImageLayout::eTransferSrcOptimal;
+        barrier.srcAccessMask = vk::AccessFlagBits::eMemoryWrite;
+        barrier.dstAccessMask = vk::AccessFlagBits::eMemoryRead;
+
+        cmd.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
+                            vk::PipelineStageFlagBits::eTransfer,
+                            vk::DependencyFlags(0), {}, {}, {barrier});
+
+        vk::ImageBlit blit{};
+
+        blit.srcOffsets[0] = vk::Offset3D(0, 0, 0);
+        blit.srcOffsets[1] = vk::Offset3D(mipWidth, mipHeight, 1);
+        blit.srcSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+        blit.srcSubresource.mipLevel = i - 1;
+        blit.srcSubresource.baseArrayLayer = 0;
+        blit.srcSubresource.layerCount = 1;
+        blit.dstOffsets[0] = vk::Offset3D(0, 0, 0);
+        blit.dstOffsets[1] = vk::Offset3D(mipWidth > 1 ? mipWidth / 2 : 1,
+                                          mipHeight > 1 ? mipHeight / 2 : 1, 1);
+        blit.dstSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+        blit.dstSubresource.mipLevel = i;
+        blit.dstSubresource.baseArrayLayer = 0;
+        blit.dstSubresource.layerCount = 1;
+
+        cmd.blitImage(tex->image, vk::ImageLayout::eTransferSrcOptimal,
+                      tex->image, vk::ImageLayout::eTransferDstOptimal, {blit},
+                      (vk::Filter)tex->sampler);
+
+        if (mipWidth > 1) mipWidth /= 2;
+        if (mipHeight > 1) mipHeight /= 2;
+    }
 }
