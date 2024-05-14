@@ -4,6 +4,8 @@ file(GLOB_RECURSE SRC
 
 add_executable (${PROJECT_NAME} ${SRC})
 
+add_dependencies(${PROJECT_NAME} Shaders)
+
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 
 if(Win32)

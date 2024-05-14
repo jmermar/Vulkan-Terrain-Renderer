@@ -11,11 +11,8 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 
-if (WIN32)
-    ADD_DEFINITIONS(-DRESPATH=\"../../../res/\")
-else()
-    ADD_DEFINITIONS(-DRESPATH=\"../res/\")
-endif(WIN32)
+add_definitions(-DRESPATH=\"${CMAKE_SOURCE_DIR}/res/\")
+add_subdirectory(res)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 add_subdirectory(vendor EXCLUDE_FROM_ALL)

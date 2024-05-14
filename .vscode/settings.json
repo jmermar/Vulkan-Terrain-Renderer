@@ -41,11 +41,6 @@
       "string_view": "cpp",
       "system_error": "cpp",
       "tuple": "cpp",
-      "cmake": {
-        "configureEnvironment": {
-          "VULKAN_SDK": "${env:VULKAN_SDK"
-        }
-      },
       "type_traits": "cpp",
       "utility": "cpp",
       "fstream": "cpp",
