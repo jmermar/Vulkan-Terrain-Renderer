@@ -53,13 +53,13 @@ struct Point {
 };
 
 struct Region2D {
-    uint32_t w{}, h{};
     uint32_t x{}, y{};
+    uint32_t w{}, h{};
 };
 
 struct Rect {
-    uint32_t w{}, h{};
     int32_t x{}, y{};
+    uint32_t w{}, h{};
 };
 
 struct EngineInitConfig {

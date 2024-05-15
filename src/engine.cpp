@@ -320,9 +320,11 @@ Texture* Engine::createTexture(Size size, TextureFormat format,
     imagecreateInfo.arrayLayers = 1;
     imagecreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     imagecreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-    imagecreateInfo.usage = usage | VK_IMAGE_USAGE_SAMPLED_BIT |
-                            VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-                            VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    imagecreateInfo.usage =
+        usage | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+        VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+        (format != TextureFormat::DEPTH32 ? VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+                                          : 0);
 
     VmaAllocationCreateInfo vmaAlloc = {
         .usage = VMA_MEMORY_USAGE_GPU_ONLY,

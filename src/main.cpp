@@ -53,10 +53,27 @@ int main() {
                         .addColorAttachment(TextureFormat::RGBA16)
                         .addStage(std::span(vertShader), ShaderStage::VERTEX)
                         .addStage(std::span(fragShader), ShaderStage::FRAGMENT)
+                        .setCullMode(PolygonCullMode::NONE)
                         .fillTriangles()
+                        .setVertexStride(sizeof(Vertex))
                         .build();
 
     BufferWriter bufferWriter{engine};
+
+    Vertex vertices[3];
+    uint32_t indices[3] = {0, 1, 2};
+
+    vertices[0].pos = {0, -1, 0};
+    vertices[1].pos = {-1, 1, 0};
+    vertices[2].pos = {1, 1, 0};
+
+    vertices[0].color = {1, 0, 0};
+    vertices[1].color = {0, 1, 0};
+    vertices[2].color = {0, 0, 1};
+
+    auto mesh = engine.createMesh(sizeof(Vertex) * 3, 3);
+    bufferWriter.enqueueMeshWrite(mesh, std::span(vertices, 3),
+                                  std::span(indices, 3));
     while (!engine.shouldClose()) {
         engine.update();
 
@@ -64,8 +81,22 @@ int main() {
 
         if (cmd.isValid()) {
             bufferWriter.updateWrites(cmd);
+
+            cmd.beginPass(std::span(&texture, 1));
+            auto& cmdb = cmd.cmd;
+            PushConstants pc;
+            pc.proj = pc.model = pc.view = glm::mat4(1);
+            cmd.bindPipeline(pipeline, pc);
+            cmd.setViewport({0, 0, 256, 256});
+
+            cmd.bindMesh(mesh);
+
+            cmdb.drawIndexed(3, 1, 0, 0, 0);
+            cmd.endPass();
+
             engine.submitFrame(texture);
         }
     }
+    engine.waitFinishAllCommands();
     return 0;
 }

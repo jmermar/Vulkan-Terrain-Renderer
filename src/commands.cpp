@@ -1,5 +1,7 @@
 #include "commands.hpp"
 
+#include "pipelines.hpp"
+
 void CommandBuffer::begin() {
     cmd.reset();
     vk::CommandBufferBeginInfo cmdBeginInfo;
@@ -201,4 +203,48 @@ void CommandBuffer::generateMipMapLevels(Texture* tex) {
         if (mipWidth > 1) mipWidth /= 2;
         if (mipHeight > 1) mipHeight /= 2;
     }
+}
+
+void CommandBuffer::beginPass(std::span<Texture*> framebuffers,
+                              Texture* depthBuffer, bool clearDepth) {
+    Size area;
+    vk::RenderingInfo renderInfo;
+    std::vector<vk::RenderingAttachmentInfo> colorAttachments(
+        framebuffers.size());
+    vk::RenderingAttachmentInfo attachInfo, depthInfo;
+    attachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+    attachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+    attachInfo.storeOp = vk::AttachmentStoreOp::eStore;
+    for (size_t i = 0; i < framebuffers.size(); i++) {
+        auto texture = framebuffers[i];
+        attachInfo.imageView = texture->imageView;
+        colorAttachments[i] = attachInfo;
+        area = texture->size;
+    }
+    renderInfo.colorAttachmentCount = colorAttachments.size();
+    renderInfo.pColorAttachments = colorAttachments.data();
+    renderInfo.layerCount = 1;
+
+    if (depthBuffer) {
+        depthInfo.imageView = depthBuffer->imageView;
+        depthInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+        depthInfo.loadOp = clearDepth ? vk::AttachmentLoadOp::eClear
+                                      : vk::AttachmentLoadOp::eLoad;
+        depthInfo.storeOp = vk::AttachmentStoreOp::eStore;
+        depthInfo.clearValue.depthStencil.depth = 1.f;
+        renderInfo.pDepthAttachment = &depthInfo;
+    }
+
+    renderInfo.renderArea = {.offset = {0, 0}, .extent = {area.w, area.h}};
+
+    cmd.beginRendering(renderInfo);
+}
+
+void CommandBuffer::endPass() { cmd.endRendering(); }
+
+void CommandBuffer::bindPipeline(GraphicsPipeline& pipeline, const void* data,
+                                 uint32_t size) {
+    cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.pipeline);
+    cmd.pushConstants(pipeline.layout, vk::ShaderStageFlagBits::eAll, 0, size,
+                      data);
 }

@@ -1,12 +1,11 @@
 #pragma once
 
 #include "gpu_resources.hpp"
-
+class GraphicsPipeline;
 class CommandBuffer {
     friend class Engine;
 
    private:
-    vk::CommandBuffer cmd;
     CommandBuffer(vk::CommandBuffer cmd) : cmd(cmd) {}
 
     void begin();
@@ -33,8 +32,10 @@ class CommandBuffer {
                            vk::PipelineStageFlagBits2::eAllCommands,
                        vk::PipelineStageFlagBits2 dstStage =
                            vk::PipelineStageFlagBits2::eAllCommands);
+    void bindPipeline(GraphicsPipeline& p, const void* data, uint32_t size);
 
    public:
+    vk::CommandBuffer cmd;
     inline void transitionTexture(Texture* texture, vk::ImageLayout srcLayout,
                                   vk::PipelineStageFlagBits2 srcStage,
                                   vk::ImageLayout dstLayout,
@@ -89,4 +90,40 @@ class CommandBuffer {
     bool isValid() { return cmd != 0; }
 
     void generateMipMapLevels(Texture* tex);
+
+    void beginPass(std::span<Texture*> framebuffers, Texture* depthBuffer = 0,
+                   bool clearDepth = false);
+
+    void endPass();
+
+    template <typename T>
+    void bindPipeline(GraphicsPipeline& pipeline, const T& t) {
+        bindPipeline(pipeline, &t, sizeof(T));
+    }
+    void setViewport(const Rect& viewport) {
+        vk::Viewport vp;
+        vp.x = viewport.x;
+        vp.y = viewport.y;
+        vp.width = (float)viewport.w;
+        vp.height = (float)viewport.h;
+        vp.maxDepth = 1.f;
+        vp.minDepth = 0.f;
+
+        vk::Rect2D scissor;
+        scissor.offset.x = viewport.x;
+        scissor.offset.y = viewport.y;
+        scissor.extent.width = viewport.w;
+        scissor.extent.height = viewport.h;
+
+        cmd.setViewport(0, 1, &vp);
+        cmd.setScissor(0, 1, &scissor);
+    };
+
+    void bindMesh(Mesh* mesh) {
+        cmd.bindIndexBuffer(mesh->indices, 0, vk::IndexType::eUint32);
+        vk::Buffer vertices = mesh->vertices;
+        vk::DeviceSize offset = 0;
+
+        cmd.bindVertexBuffers(0, 1, &vertices, &offset);
+    }
 };

@@ -172,4 +172,6 @@ class Engine {
     vk::DescriptorSetLayout getDescriptorSetLayout() {
         return bindings.getLayout();
     }
+
+    void waitFinishAllCommands() { device.waitIdle(); }
 };
