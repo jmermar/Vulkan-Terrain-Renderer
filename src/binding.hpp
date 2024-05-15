@@ -1,5 +1,7 @@
 #pragma once
 #include <vector>
+#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_handles.hpp>
 
 #include "gpu_resources.hpp"
 #include "types.hpp"
@@ -40,4 +42,6 @@ class GlobalBinding {
         storageBinds.clear();
         textureBinds.clear();
     }
+
+    vk::DescriptorSetLayout getLayout() { return layout; }
 };

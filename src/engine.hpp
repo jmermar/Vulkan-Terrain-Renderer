@@ -2,7 +2,6 @@
 #include <SDL3/SDL.h>
 
 #include <cassert>
-#include <span>
 
 #include "binding.hpp"
 #include "commands.hpp"
@@ -39,6 +38,8 @@ class Window {
 };
 
 class Engine {
+    friend class PipelineBuilder;
+
    private:
     // types
 
@@ -166,5 +167,9 @@ class Engine {
     void destroyMesh(Mesh* mesh) {
         deletionQueue.meshes.push_back(std::move(*mesh));
         meshPool.destroy(mesh);
+    }
+
+    vk::DescriptorSetLayout getDescriptorSetLayout() {
+        return bindings.getLayout();
     }
 };
