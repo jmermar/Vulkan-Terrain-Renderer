@@ -2,31 +2,57 @@
 
 #include "engine.hpp"
 #include "gpu_resources.hpp"
-#include "raii.hpp"
 #include "types.hpp"
+
+class GraphicsPipeline {
+    friend class CommandBuffer;
+    friend class PipelineBuilder;
+
+   private:
+    vk::raii::PipelineLayout layout{nullptr};
+    vk::raii::Pipeline pipeline{nullptr};
+
+    GraphicsPipeline(vk::raii::Device& device,
+                     const vk::GraphicsPipelineCreateInfo& pipelineInfo,
+                     const vk::PipelineLayoutCreateInfo& layoutInfo) {
+        layout = device.createPipelineLayout(layoutInfo);
+        auto pci = pipelineInfo;
+        pci.layout = layout;
+        pipeline = device.createGraphicsPipeline(nullptr, pci);
+    }
+};
+
 class PipelineBuilder {
    private:
     Engine& engine;
-    struct CustomShaderStage {
-        vk::raii::ShaderModule module;
-        vk::ShaderStageFlags stage;
-    };
-
-    std::vector<vk::VertexInputAttributeDescription> attributes;
-
-    std::vector<CustomShaderStage> stages;
-
+    // PipelineLayout
     vk::PushConstantRange pushConstant{};
 
+    // Pipeline
+    vk ::DynamicState dynamicStates[2] = {vk::DynamicState::eViewport,
+                                          vk::DynamicState::eScissor};
+    std::vector<vk::Format> colorAttachmentFormats;
+    std::vector<vk::PipelineColorBlendAttachmentState> blendAttachment;
+
+    uint32_t stride = 0;
+    std::vector<vk::VertexInputAttributeDescription> attributes;
+    std::vector<vk::raii::ShaderModule> modules;
+    std::vector<vk::PipelineShaderStageCreateInfo> stages;
+
+    vk::PipelineVertexInputStateCreateInfo vertexInput;
     vk::PipelineInputAssemblyStateCreateInfo assembly;
+    vk::PipelineTessellationStateCreateInfo tessellation;
+    vk::PipelineViewportStateCreateInfo viewport;
     vk::PipelineRasterizationStateCreateInfo rasterizer;
+    vk::PipelineMultisampleStateCreateInfo multisample;
+    vk::PipelineDepthStencilStateCreateInfo depthStencil;
+    vk::PipelineColorBlendStateCreateInfo colorBlend;
+    vk::PipelineDynamicStateCreateInfo dynamicState;
+    vk::PipelineRenderingCreateInfo renderInfo;
 
    public:
-    PipelineBuilder(Engine& engine) : engine(engine) {
-        drawLines();
-        setCullMode(PolygonCullMode::NONE);
-        rasterizer.frontFace = vk::FrontFace::eCounterClockwise;
-    }
+    PipelineBuilder(Engine& engine);
+
     template <typename T>
     PipelineBuilder& setPushConstant() {
         pushConstant.size = sizeof(T);
@@ -39,6 +65,11 @@ class PipelineBuilder {
                               ShaderStage stage);
     PipelineBuilder& clearStages() {
         stages.clear();
+        modules.clear();
+        return *this;
+    }
+    PipelineBuilder& setVertexStride(uint32_t stride) {
+        this->stride = stride;
         return *this;
     }
     PipelineBuilder& addVertexInputAttribute(uint32_t offset,
@@ -57,4 +88,19 @@ class PipelineBuilder {
         rasterizer.lineWidth = 1.f;
         return *this;
     }
+
+    PipelineBuilder& addColorAttachment(TextureFormat format);
+    PipelineBuilder& clearColorAttachments() {
+        colorAttachmentFormats.clear();
+        blendAttachment.clear();
+        return *this;
+    }
+
+    PipelineBuilder& disableMultisampling();
+
+    PipelineBuilder& disableDepthTest();
+    PipelineBuilder& depthTestRead();
+    PipelineBuilder& depthTestReadWrite();
+
+    GraphicsPipeline build();
 };

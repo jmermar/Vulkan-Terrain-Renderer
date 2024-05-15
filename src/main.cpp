@@ -1,5 +1,37 @@
+#include <fstream>
+#include <glm/glm.hpp>
+#include <stdexcept>
+
 #include "engine.hpp"
-#include "memory.hpp"
+#include "pipelines.hpp"
+#include "types.hpp"
+struct PushConstants {
+    glm::mat4 proj;
+    glm::mat4 view;
+    glm::mat4 model;
+};
+struct Vertex {
+    glm::vec3 pos;
+    glm::vec3 color;
+};
+
+std::vector<uint8_t> loadShaderBinary(const std::string& filePath) {
+    std::ifstream file(std::string(RESPATH) + "shaders/" + filePath,
+                       std::ios::ate | std::ios::binary);
+
+    if (!file.is_open()) {
+        throw std::runtime_error("Cannot load shader " + filePath);
+    }
+
+    size_t fileSize = (size_t)file.tellg();
+
+    std::vector<uint8_t> buffer(fileSize);
+
+    file.seekg(0);
+
+    file.read((char*)buffer.data(), fileSize);
+    return buffer;
+}
 int main() {
     EngineInitConfig initConfig;
     initConfig.appName = "Vulkan Terrain";
@@ -10,36 +42,28 @@ int main() {
     auto texture = engine.createTexture(
         {.w = 256, .h = 256}, TextureFormat::RGBA16, TextureSampler::LINEAR, 4);
 
-    auto buffer = engine.createStorageBuffer(256 * 256 * 4 * 2);
-    auto mesh = engine.createMesh(sizeof(float) * 3, 3);
+    // Setup pipeline
+    auto vertShader = loadShaderBinary("test.vert.spv");
+    auto fragShader = loadShaderBinary("test.frag.spv");
+    PipelineBuilder builder(engine);
+    auto pipeline = builder.setPushConstant<PushConstants>()
+                        .addVertexInputAttribute(0, VertexInputFormat::FLOAT3)
+                        .addVertexInputAttribute(offsetof(Vertex, color),
+                                                 VertexInputFormat::FLOAT3)
+                        .addColorAttachment(TextureFormat::RGBA16)
+                        .addStage(std::span(vertShader), ShaderStage::VERTEX)
+                        .addStage(std::span(fragShader), ShaderStage::FRAGMENT)
+                        .fillTriangles()
+                        .build();
 
     BufferWriter bufferWriter{engine};
-    int i = 0;
     while (!engine.shouldClose()) {
-        float a = ((i++) % 100) / 100.f;
         engine.update();
-
-        uint16_t data[4 * 4];
-        memset(data, 0, 4 * 4 * sizeof(uint16_t));
-        data[0] = UINT16_MAX * a;
-        data[5] = UINT16_MAX * (1 - a);
-        data[10] = UINT16_MAX * (0.5 + 0.5 * a);
-
-        bufferWriter.enqueueBufferWrite(buffer, data, 0, 4 * 4 * 2);
-        float v[] = {0.f, 1.f, 0.f};
-        uint32_t i[] = {0, 1, 2};
-        bufferWriter.enqueueMeshWrite(mesh, std::span<float>(v),
-                                      std::span<uint32_t>(i));
-
-        bufferWriter.enqueueTextureWrite(texture, data);
 
         auto cmd = engine.initFrame();
 
         if (cmd.isValid()) {
             bufferWriter.updateWrites(cmd);
-            cmd.transitionTexture(texture, vk::ImageLayout::eUndefined,
-                                  vk::ImageLayout::eTransferDstOptimal);
-            cmd.copyToTexture(texture, buffer);
             engine.submitFrame(texture);
         }
     }
