@@ -3,13 +3,24 @@
 #include "types.hpp"
 namespace engine {
 struct TerrainVertexData {
-    glm::vec3 pos;
-    glm::vec3 color;
+    glm::vec4 pos;
 };
 
 struct TerrainPushConstants {
     glm::mat4 proj, view, model;
     val::BindPoint<val::Texture> grassBind;
+};
+
+struct ComputeGlobalData {
+    uint32_t numVertices;
+    uint32_t patchIndex;
+    uint32_t pad[2];
+};
+
+struct TerrainComputePushConstants {
+    glm::vec3 camPos;
+    val::BindPoint<val::StorageBuffer> patchesBind;
+    val::BindPoint<val::StorageBuffer> globalBind;
 };
 
 struct TerrainChunk {
@@ -18,15 +29,20 @@ struct TerrainChunk {
     glm::vec3 position{};
 };
 
+constexpr float PATCH_LENGTH = 128;
+constexpr uint32_t MAX_PATCH = 16;
+constexpr uint32_t NUM_PATCHES = MAX_PATCH * MAX_PATCH;
+
 class TerrainRenderer {
    private:
     val::Engine& engine;
     val::BufferWriter& writer;
     val::GraphicsPipeline pass{};
+    val::ComputePipeline patchGenerator{};
     val::Texture* grass;
-    TerrainChunk chunk{};
+    val::StorageBuffer* vertexOutput;
+    val::StorageBuffer* computeGlobalData;
 
-    TerrainChunk generateChunk(const glm::vec3& position);
 
    public:
     TerrainRenderer(val::Engine& engine, val::BufferWriter& writer);

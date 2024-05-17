@@ -67,5 +67,5 @@
       "unordered_set": "cpp"
     },
     "editor.formatOnSave": true,
-    "editor.defaultFormatter": "xaver.clang-format"
+    "editor.defaultFormatter": "mjohns.clang-format"
   }

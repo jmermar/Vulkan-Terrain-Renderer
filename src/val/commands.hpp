@@ -3,6 +3,7 @@
 #include "gpu_resources.hpp"
 namespace val {
 class GraphicsPipeline;
+class ComputePipeline;
 class CommandBuffer {
     friend class Engine;
 
@@ -35,7 +36,9 @@ class CommandBuffer {
                        vk::PipelineStageFlagBits2 dstStage =
                            vk::PipelineStageFlagBits2::eAllCommands);
     void _bindPipeline(GraphicsPipeline& p);
+    void _bindPipeline(ComputePipeline& p);
     void _pushConstants(GraphicsPipeline& p, const void* data, uint32_t size);
+    void _pushConstants(ComputePipeline& p, const void* data, uint32_t size);
 
    public:
     vk::CommandBuffer cmd;
@@ -100,8 +103,13 @@ class CommandBuffer {
     void endPass();
 
     void bindPipeline(GraphicsPipeline& pipeline) { _bindPipeline(pipeline); }
+    void bindPipeline(ComputePipeline& pipeline) { _bindPipeline(pipeline); }
     template <typename T>
     void pushConstants(GraphicsPipeline& pipeline, const T& t) {
+        _pushConstants(pipeline, &t, sizeof(T));
+    }
+    template <typename T>
+    void pushConstants(ComputePipeline& pipeline, const T& t) {
         _pushConstants(pipeline, &t, sizeof(T));
     }
     void setViewport(const Rect& viewport) {
@@ -126,6 +134,13 @@ class CommandBuffer {
     void bindMesh(Mesh* mesh) {
         cmd.bindIndexBuffer(mesh->indices, 0, vk::IndexType::eUint32);
         vk::Buffer vertices = mesh->vertices;
+        vk::DeviceSize offset = 0;
+
+        cmd.bindVertexBuffers(0, 1, &vertices, &offset);
+    }
+
+    void bindVertexBuffer(StorageBuffer* buffer) {
+        vk::Buffer vertices = buffer->buffer;
         vk::DeviceSize offset = 0;
 
         cmd.bindVertexBuffers(0, 1, &vertices, &offset);

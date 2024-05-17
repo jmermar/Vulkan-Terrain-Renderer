@@ -162,4 +162,32 @@ GraphicsPipeline PipelineBuilder::build() {
     layoutInfo.setLayoutCount = 1;
     return GraphicsPipeline(engine.device, createInfo, layoutInfo);
 }
+ComputePipelineBuilder & ComputePipelineBuilder::setShader(const std::span<uint8_t> shaderData)
+{
+vk::ShaderModuleCreateInfo moduleCreate;
+    moduleCreate.pCode = (uint32_t*)shaderData.data();
+    moduleCreate.codeSize = shaderData.size();
+
+    shaderModule = engine.device.createShaderModule(moduleCreate);
+
+    stage.pName = "main";
+    stage.module = *shaderModule;
+    stage.stage = vk::ShaderStageFlagBits::eCompute;
+    return *this;
+}
+
+ComputePipeline ComputePipelineBuilder::build() {
+    pushConstant.stageFlags = vk::ShaderStageFlagBits::eAll;
+    vk::PipelineLayoutCreateInfo layoutInfo;
+    layoutInfo.pushConstantRangeCount = 1;
+    layoutInfo.pPushConstantRanges = &pushConstant;
+    auto descLayout = engine.bindings.getLayout();
+    layoutInfo.pSetLayouts = &descLayout;
+    layoutInfo.setLayoutCount = 1;
+    
+    vk::ComputePipelineCreateInfo computeCreateInfo;
+    computeCreateInfo.stage = stage;
+
+    return ComputePipeline(engine.device, computeCreateInfo, layoutInfo);
+}
 }  // namespace val

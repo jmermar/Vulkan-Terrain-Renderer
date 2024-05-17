@@ -344,7 +344,7 @@ CPUBuffer* Engine::createCpuBuffer(size_t size) {
     return buffer;
 }
 
-StorageBuffer* Engine::createStorageBuffer(uint32_t size) {
+StorageBuffer* Engine::createStorageBuffer(uint32_t size, vk::BufferUsageFlagBits usage) {
     VkBufferCreateInfo bufferInfo = {.sType =
                                          VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
     bufferInfo.pNext = nullptr;
@@ -352,7 +352,7 @@ StorageBuffer* Engine::createStorageBuffer(uint32_t size) {
 
     bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                       VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+                       VK_BUFFER_USAGE_TRANSFER_SRC_BIT | (VkBufferUsageFlagBits)usage;
 
     VmaAllocationCreateInfo vmaallocInfo = {};
     vmaallocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;

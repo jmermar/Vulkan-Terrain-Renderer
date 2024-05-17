@@ -249,7 +249,20 @@ void CommandBuffer::_bindPipeline(GraphicsPipeline& pipeline) {
                            0, 1, &ds, 0, nullptr);
 }
 
+void CommandBuffer::_bindPipeline(ComputePipeline& pipeline) {
+    cmd.bindPipeline(vk::PipelineBindPoint::eCompute, *pipeline.pipeline);
+    auto ds = *engine.bindings.descriptorSet;
+    cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *pipeline.layout,
+                           0, 1, &ds, 0, nullptr);
+}
+
 void CommandBuffer::_pushConstants(GraphicsPipeline& pipeline, const void* data,
+                                   uint32_t size) {
+    cmd.pushConstants(*pipeline.layout, vk::ShaderStageFlagBits::eAll, 0, size,
+                      data);
+}
+
+void CommandBuffer::_pushConstants(ComputePipeline& pipeline, const void* data,
                                    uint32_t size) {
     cmd.pushConstants(*pipeline.layout, vk::ShaderStageFlagBits::eAll, 0, size,
                       data);

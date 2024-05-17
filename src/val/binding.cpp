@@ -42,7 +42,7 @@ void GlobalBinding::init(const vk::raii::Device& device,
     storageBind.descriptorType = vk::DescriptorType::eStorageBuffer;
     storageBind.descriptorCount =
         properties.limits.maxDescriptorSetStorageBuffers;
-    textureBind.stageFlags = vk::ShaderStageFlagBits::eAll;
+    storageBind.stageFlags = vk::ShaderStageFlagBits::eAll;
     bindingFlags.push_back(vk::DescriptorBindingFlagBits::ePartiallyBound | vk::DescriptorBindingFlagBits::eUpdateAfterBind);
 
     vk::DescriptorSetLayoutCreateInfo layoutCreateInfo;

@@ -26,6 +26,48 @@ class GraphicsPipeline {
     GraphicsPipeline() = default;
 };
 
+class ComputePipeline {
+    friend class CommandBuffer;
+    friend class ComputePipelineBuilder;
+
+   private:
+    vk::raii::PipelineLayout layout{nullptr};
+    vk::raii::Pipeline pipeline{nullptr};
+
+    ComputePipeline(vk::raii::Device& device,
+                     const vk::ComputePipelineCreateInfo& pipelineInfo,
+                     const vk::PipelineLayoutCreateInfo& layoutInfo) {
+        layout = device.createPipelineLayout(layoutInfo);
+        auto pci = pipelineInfo;
+        pci.layout = *layout;
+        pipeline = device.createComputePipeline(nullptr, pci);
+    }
+
+   public:
+    ComputePipeline() = default;
+};
+
+class ComputePipelineBuilder {
+    private:
+    Engine& engine;
+    vk::PushConstantRange pushConstant;
+
+    vk::PipelineShaderStageCreateInfo stage;
+    vk::raii::ShaderModule shaderModule{nullptr};
+
+public:
+ComputePipelineBuilder(Engine& engine) : engine(engine) {}
+    ComputePipelineBuilder& setShader(const std::span<uint8_t> shaderData);
+    template <typename T>
+    ComputePipelineBuilder& setPushConstant() {
+        pushConstant.size = sizeof(T);
+        pushConstant.offset = 0;
+
+        return *this;
+    }
+    ComputePipeline build();
+};
+
 class PipelineBuilder {
    private:
     Engine& engine;

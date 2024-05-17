@@ -1,7 +1,6 @@
 #version 450
 
 layout(location = 0) in vec3 pos;
-layout(location = 1) in vec3 color;
 
 layout(location = 0) out vec3 outColor;
 layout(location = 1) out vec2 uv;
@@ -56,7 +55,7 @@ float getHeight(vec2 v) {
 }
 
 void main() {
-	vec4 worldPos = model * vec4(pos, 1.0);
+	vec4 worldPos = vec4(pos, 1.0);
 	worldPos.y =getHeight(vec2(worldPos.x, worldPos.z));
 	outColor = vec3(clamp(worldPos.y, 0.3, 1));
 	worldPos.y *= 50;

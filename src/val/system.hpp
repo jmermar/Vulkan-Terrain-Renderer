@@ -19,6 +19,7 @@ class PresentationProvider {
 class Engine {
     friend class PipelineBuilder;
     friend class CommandBuffer;
+    friend class ComputePipelineBuilder;
 
    private:
     // types
@@ -118,7 +119,7 @@ class Engine {
                            TextureSampler sampling = TextureSampler::NEAREST,
                            uint32_t mipLevels = 1, VkImageUsageFlags usage = 0);
     CPUBuffer* createCpuBuffer(size_t size);
-    StorageBuffer* createStorageBuffer(uint32_t size);
+    StorageBuffer* createStorageBuffer(uint32_t size, vk::BufferUsageFlagBits usage = vk::BufferUsageFlagBits(0));
 
     Mesh* createMesh(size_t verticesSize, uint32_t indicesCount);
 
