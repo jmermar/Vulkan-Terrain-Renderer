@@ -24,6 +24,11 @@ TerrainRenderer::TerrainRenderer(val::Engine& engine, val::BufferWriter& writer)
                .build();
 
     chunk = generateChunk(glm::vec3(0));
+
+    auto texData = file::loadImage("textures/grass.png");
+    grass = engine.createTexture(texData.size, val::TextureFormat::RGBA8,
+                                 val::TextureSampler::LINEAR, 16);
+    writer.enqueueTextureWrite(grass, texData.data.data());
 }
 
 TerrainChunk TerrainRenderer::generateChunk(const glm::vec3& p) {
@@ -75,6 +80,7 @@ void TerrainRenderer::renderPass(val::Texture* depth, val::Texture* framebuffer,
     pc.model =
         glm::translate(glm::mat4(1), chunk.position) *
         glm::scale(glm::mat4(1), glm::vec3(chunk.size.x, 1, chunk.size.y));
+    pc.grassBind = grass->bindPoint;
     cmd.bindPipeline(pass);
     cmd.pushConstants(pass, pc);
     cmd.setViewport({0, 0, framebuffer->size.w, framebuffer->size.h});

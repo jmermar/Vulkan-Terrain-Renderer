@@ -4,6 +4,7 @@
 namespace val {
 class GlobalBinding {
     friend class Engine;
+    friend class CommandBuffer;
 
    private:
     vk::Device device{nullptr};

@@ -170,17 +170,17 @@ CommandBuffer Engine::initFrame() {
 
     std::pair<vk::Result, uint32_t> result;
     try {
-        result = swapchain.swapchain.acquireNextImage(10000000000000,
-                                                      *frame.swapchainSemaphore);
+        result = swapchain.swapchain.acquireNextImage(
+            10000000000000, *frame.swapchainSemaphore);
     } catch (vk::OutOfDateKHRError& exc) {
         shouldRegenerate = true;
         frameCounter++;
-        return vk::CommandBuffer(nullptr);
+        return val::CommandBuffer(*this, vk::CommandBuffer(nullptr));
     }
 
     imageIndex = result.second;
 
-    auto cmd = CommandBuffer(*frame.commandBuffer);
+    auto cmd = CommandBuffer(*this, *frame.commandBuffer);
     cmd.begin();
 
     frame.deletionQueue.clear();
@@ -191,7 +191,7 @@ CommandBuffer Engine::initFrame() {
 void Engine::submitFrame(Texture* backbuffer) {
     auto& frame = frames[frameCounter % FRAMES_IN_FLIGHT];
 
-    auto cmd = CommandBuffer(*frame.commandBuffer);
+    auto cmd = CommandBuffer(*this, *frame.commandBuffer);
     auto image = swapchain.images[imageIndex];
     if (backbuffer != nullptr) {
         cmd.transitionImage(backbuffer->image, vk::RemainingMipLevels,
@@ -276,7 +276,7 @@ void Engine::submitFrame(Texture* backbuffer) {
 Texture* Engine::createTexture(Size size, TextureFormat format,
                                TextureSampler sampling, uint32_t mipLevels,
                                VkImageUsageFlags usage) {
-    assert(mipLevels > 0 && mipLevels < 32);
+    assert(mipLevels > 0 && mipLevels <= 32);
 
     Texture* texture = texturePool.allocate();
 

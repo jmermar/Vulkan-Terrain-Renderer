@@ -25,4 +25,5 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
     SDL3::SDL3
     vk-bootstrap::vk-bootstrap
     vma
+    stb_image
 )

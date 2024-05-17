@@ -33,12 +33,14 @@ void GlobalBinding::init(const vk::raii::Device& device,
     textureBind.descriptorType = vk::DescriptorType::eCombinedImageSampler;
     textureBind.descriptorCount =
         properties.limits.maxDescriptorSetSampledImages;
+    textureBind.stageFlags = vk::ShaderStageFlagBits::eAll;
 
     auto& storageBind = layoutBindings.emplace_back();
     storageBind.binding = STORAGE_BIND;
     storageBind.descriptorType = vk::DescriptorType::eStorageBuffer;
     storageBind.descriptorCount =
         properties.limits.maxDescriptorSetStorageBuffers;
+    textureBind.stageFlags = vk::ShaderStageFlagBits::eAll;
 
     vk::DescriptorSetLayoutCreateInfo layoutCreateInfo;
     layoutCreateInfo.flags =
@@ -79,6 +81,7 @@ void GlobalBinding::init(const vk::raii::Device& device,
 
     vk::SamplerCreateInfo sampler;
     sampler.magFilter = sampler.minFilter = vk::Filter::eNearest;
+    sampler.maxLod = 32;
     nearestSampler = device.createSampler(sampler);
 
     sampler.magFilter = sampler.minFilter = vk::Filter::eLinear;

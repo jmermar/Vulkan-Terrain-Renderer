@@ -244,6 +244,9 @@ void CommandBuffer::endPass() { cmd.endRendering(); }
 
 void CommandBuffer::_bindPipeline(GraphicsPipeline& pipeline) {
     cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, *pipeline.pipeline);
+    auto ds = *engine.bindings.descriptorSet;
+    cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *pipeline.layout,
+                           0, 1, &ds, 0, nullptr);
 }
 
 void CommandBuffer::_pushConstants(GraphicsPipeline& pipeline, const void* data,

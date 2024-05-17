@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <vector>
 struct Size {
     uint32_t w{}, h{};
 };
@@ -20,3 +21,8 @@ struct Rect {
 
 template <typename T>
 using Ref = T*;
+
+struct ImageData {
+    Size size;
+    std::vector<uint8_t> data;
+};

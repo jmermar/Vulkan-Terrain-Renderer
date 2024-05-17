@@ -9,6 +9,7 @@ struct TerrainVertexData {
 
 struct TerrainPushConstants {
     glm::mat4 proj, view, model;
+    val::BindPoint<val::Texture> grassBind;
 };
 
 struct TerrainChunk {
@@ -22,6 +23,7 @@ class TerrainRenderer {
     val::Engine& engine;
     val::BufferWriter& writer;
     val::GraphicsPipeline pass{};
+    val::Texture* grass;
     TerrainChunk chunk{};
 
     TerrainChunk generateChunk(const glm::vec3& position);

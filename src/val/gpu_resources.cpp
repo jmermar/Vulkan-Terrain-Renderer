@@ -16,7 +16,7 @@ void BufferWriter::updateWrites(CommandBuffer& cmd) {
         cmd.transitionTexture(texture, vk::ImageLayout::eUndefined,
                               vk::ImageLayout::eTransferDstOptimal);
         cmd.copyToTexture(texture, buffer);
-        cmd.transitionTexture(texture, vk::ImageLayout::eTransferDstOptimal,
+        cmd.transitionTexture(texture, vk::ImageLayout::eUndefined,
                               vk::ImageLayout::eColorAttachmentOptimal);
         engine.destroyCpuBuffer(buffer);
     }

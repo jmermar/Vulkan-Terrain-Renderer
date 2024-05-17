@@ -7,7 +7,8 @@ class CommandBuffer {
     friend class Engine;
 
    private:
-    CommandBuffer(vk::CommandBuffer cmd) : cmd(cmd) {}
+    Engine& engine;
+    CommandBuffer(Engine& e, vk::CommandBuffer cmd) : engine(e), cmd(cmd) {}
 
     void begin();
 

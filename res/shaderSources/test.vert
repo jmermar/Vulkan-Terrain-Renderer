@@ -4,11 +4,13 @@ layout(location = 0) in vec3 pos;
 layout(location = 1) in vec3 color;
 
 layout(location = 0) out vec3 outColor;
+layout(location = 1) out vec2 uv;
 
 layout(push_constant) uniform constants {
   mat4 proj;
   mat4 view;
   mat4 model;
+  uint grassBind;
 };
 
 float rand(vec2 n) { 
@@ -30,7 +32,9 @@ p /= 20;
 void main() {
 vec4 worldPos = model * vec4(pos, 1.0);
 worldPos.y =noise(vec2(worldPos.x, worldPos.z));
-outColor = color * vec3(worldPos.y);
+outColor = vec3(worldPos.y);
 worldPos.y *= 30;
+uv.x = worldPos.x;
+uv.y = worldPos.z;
 gl_Position = proj * view * worldPos;
 }

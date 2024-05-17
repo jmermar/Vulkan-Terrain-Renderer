@@ -18,6 +18,7 @@ class PresentationProvider {
 
 class Engine {
     friend class PipelineBuilder;
+    friend class CommandBuffer;
 
    private:
     // types
