@@ -27,7 +27,7 @@ TerrainRenderer::TerrainRenderer(val::Engine& engine, val::BufferWriter& writer)
 
     auto texData = file::loadImage("textures/grass.png");
     grass = engine.createTexture(texData.size, val::TextureFormat::RGBA8,
-                                 val::TextureSampler::LINEAR, 16);
+                                 val::TextureSampler::LINEAR, 8);
     writer.enqueueTextureWrite(grass, texData.data.data());
 }
 

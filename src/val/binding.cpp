@@ -28,12 +28,14 @@ void GlobalBinding::init(const vk::raii::Device& device,
                          const vk::PhysicalDeviceProperties& properties) {
     this->device = *device;
     std::vector<vk::DescriptorSetLayoutBinding> layoutBindings;
+    std::vector<vk::DescriptorBindingFlags> bindingFlags;
     auto& textureBind = layoutBindings.emplace_back();
     textureBind.binding = TEXTURE_BIND;
     textureBind.descriptorType = vk::DescriptorType::eCombinedImageSampler;
     textureBind.descriptorCount =
         properties.limits.maxDescriptorSetSampledImages;
     textureBind.stageFlags = vk::ShaderStageFlagBits::eAll;
+    bindingFlags.push_back(vk::DescriptorBindingFlagBits::ePartiallyBound | vk::DescriptorBindingFlagBits::eUpdateAfterBind);
 
     auto& storageBind = layoutBindings.emplace_back();
     storageBind.binding = STORAGE_BIND;
@@ -41,12 +43,19 @@ void GlobalBinding::init(const vk::raii::Device& device,
     storageBind.descriptorCount =
         properties.limits.maxDescriptorSetStorageBuffers;
     textureBind.stageFlags = vk::ShaderStageFlagBits::eAll;
+    bindingFlags.push_back(vk::DescriptorBindingFlagBits::ePartiallyBound | vk::DescriptorBindingFlagBits::eUpdateAfterBind);
 
     vk::DescriptorSetLayoutCreateInfo layoutCreateInfo;
     layoutCreateInfo.flags =
         vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool;
     layoutCreateInfo.pBindings = layoutBindings.data();
     layoutCreateInfo.bindingCount = layoutBindings.size();
+
+    vk::DescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsCreate;
+    bindingFlagsCreate.bindingCount = bindingFlags.size();
+    bindingFlagsCreate.pBindingFlags = bindingFlags.data();
+
+    layoutCreateInfo.pNext = &bindingFlagsCreate;
 
     layout = device.createDescriptorSetLayout(layoutCreateInfo);
 
