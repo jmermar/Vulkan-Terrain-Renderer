@@ -10,7 +10,8 @@ constexpr uint32_t FRAMES_IN_FLIGHT = 2;
 
 enum class PresentationFormat : uint32_t {
     Immediate = VK_PRESENT_MODE_IMMEDIATE_KHR,
-    Mailbox = VK_PRESENT_MODE_MAILBOX_KHR
+    Mailbox = VK_PRESENT_MODE_MAILBOX_KHR,
+    Fifo = VK_PRESENT_MODE_FIFO_KHR
 };
 
 enum class TextureFormat : uint32_t {
