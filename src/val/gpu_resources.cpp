@@ -1,10 +1,10 @@
 #include "gpu_resources.hpp"
 
 #include <cassert>
-#include <stdexcept>
 
-#include "engine.hpp"
 #include "helpers.hpp"
+#include "system.hpp"
+namespace val {
 void BufferWriter::updateWrites(CommandBuffer& cmd) {
     cmd.memoryBarrier(
         vk::PipelineStageFlagBits2::eAllCommands,
@@ -84,3 +84,4 @@ void BufferWriter::enqueueMeshWrite(Mesh* mesh, void* data, uint32_t dataSize,
                           .verticesUpload = verticesUpload,
                           .indicesUpload = indicesUpload});
 }
+}  // namespace val

@@ -1,12 +1,39 @@
-#include "renderer.hpp"
+#include "engine.hpp"
+
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_vulkan.h>
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/matrix.hpp>
 
-#include "engine.hpp"
-#include "gpu_resources.hpp"
 #include "types.hpp"
+namespace engine {
+class Window : public val::PresentationProvider {
+   private:
+    SDL_Window* window{};
+
+   public:
+    Window(Size size, const char* name) {
+        SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
+        window = SDL_CreateWindow(name, size.w, size.h, SDL_WINDOW_VULKAN);
+    }
+    ~Window() { SDL_DestroyWindow(window); }
+
+    operator SDL_Window*() { return window; }
+
+    VkSurfaceKHR getSurface(VkInstance instance) override {
+        VkSurfaceKHR sur;
+        SDL_Vulkan_CreateSurface(window, instance, nullptr, &sur);
+        return sur;
+    }
+
+    Size getSize() override {
+        int w, h;
+        SDL_GetWindowSize(window, &w, &h);
+        return {(uint32_t)w, (uint32_t)h};
+    }
+};
 
 void Camera::rotateX(float degrees) {
     auto angle = glm::radians(degrees / 2.f);
@@ -34,38 +61,40 @@ glm::mat4 Camera::getProjection() {
     return ret;
 }
 
-Renderer::Renderer(const RendererConfig& config) {
-    EngineInitConfig initConfig;
+Engine::Engine(const RendererConfig& config) {
+    Size winSize = {.w = config.width, .h = config.height};
+    presentation = std::make_unique<Window>(winSize, "Vulkan Terrain");
+    val::EngineInitConfig initConfig;
     initConfig.appName = "Vulkan Terrain";
-    initConfig.presentation = PresentationFormat::Mailbox;
+    initConfig.presentation = val::PresentationFormat::Mailbox;
     initConfig.useImGUI = false;
     initConfig.screenSize = {.w = 1920, .h = 1080};
 
-    engine = std::make_unique<Engine>(initConfig);
-    writer = std::make_unique<BufferWriter>(*engine);
+    engine = std::make_unique<val::Engine>(initConfig, presentation.get());
+    writer = std::make_unique<val::BufferWriter>(*engine);
     terrainRenderer = std::make_unique<TerrainRenderer>(*engine, *writer);
 
-    frameBuffer = engine->createTexture({1920, 1080}, TextureFormat::RGBA16);
-    depthBuffer = engine->createTexture({1920, 1080}, TextureFormat::DEPTH32);
+    frameBuffer =
+        engine->createTexture({1920, 1080}, val::TextureFormat::RGBA16);
+    depthBuffer =
+        engine->createTexture({1920, 1080}, val::TextureFormat::DEPTH32);
     engine->createMesh(4, 1);
 }
 
-Renderer::~Renderer() { engine->waitFinishAllCommands(); }
+Engine::~Engine() { engine->waitFinishAllCommands(); }
 
-void Renderer::updateInput() {
-    SDL_Window* window = engine->getWindow();
-    int w, h;
-    SDL_GetWindowSize(window, &w, &h);
-    glm::vec2 center(w / 2.f, h / 2.f);
+void Engine::updateInput() {
+    auto winSize = presentation->getSize();
+    glm::vec2 center(winSize.w / 2.f, winSize.h / 2.f);
     if (mouseCaputure.capture) {
         SDL_SetRelativeMouseMode(true);
         glm::vec2 mousePos;
         SDL_GetMouseState(&mousePos.x, &mousePos.y);
 
         mouseCaputure.mouseDelta =
-            (center - mousePos) / glm::vec2((float)w, (float)h);
+            (center - mousePos) / glm::vec2((float)winSize.w, (float)winSize.h);
 
-        SDL_WarpMouseInWindow(window, center.x, center.y);
+        SDL_WarpMouseInWindow(*presentation, center.x, center.y);
     } else {
         SDL_SetRelativeMouseMode(false);
         mouseCaputure.mouseDelta = {};
@@ -95,9 +124,9 @@ void Renderer::updateInput() {
     }
 }
 
-bool Renderer::shouldClose() { return _shouldClose; }
+bool Engine::shouldClose() { return _shouldClose; }
 
-void Renderer::render(Camera& camera) {
+void Engine::render(Camera& camera) {
     engine->update();
 
     auto cmd = engine->initFrame();
@@ -123,3 +152,4 @@ void Renderer::render(Camera& camera) {
         engine->submitFrame(frameBuffer);
     }
 }
+}  // namespace engine

@@ -1,17 +1,7 @@
-#include "engine.hpp"
+#include "system.hpp"
 
 #include <VkBootstrap.h>
-#include <vulkan/vulkan_core.h>
-
-#include <vulkan/vulkan_enums.hpp>
-#include <vulkan/vulkan_raii.hpp>
-#include <vulkan/vulkan_structs.hpp>
-
-#include "SDL3/SDL_vulkan.h"
-#include "raii.hpp"
-#include "types.hpp"
-void Engine::initWindow() { window.init(initConfig); }
-
+namespace val {
 void Engine::initVulkan() {
     vkb::InstanceBuilder builder;
     auto inst_ret = builder.set_app_name("Example Vulkan Application")
@@ -25,8 +15,7 @@ void Engine::initVulkan() {
     debug_messenger =
         vk::raii::DebugUtilsMessengerEXT(instance, vkb_inst.debug_messenger);
 
-    VkSurfaceKHR surface;
-    SDL_Vulkan_CreateSurface(window, vkb_inst.instance, nullptr, &surface);
+    auto surface = presentation->getSurface(*instance);
     this->surface = vk::raii::SurfaceKHR(instance, surface);
 
     vk::PhysicalDeviceVulkan13Features features{};
@@ -152,19 +141,15 @@ void Engine::initFrameData() {
 }
 
 void Engine::regenerate() {
-    int w, h;
-    SDL_GetWindowSize(window, &w, &h);
-
-    windowSize.w = w;
-    windowSize.h = h;
+    windowSize = presentation->getSize();
 
     reloadSwapchain();
 }
 
-Engine::Engine(const EngineInitConfig& initConfig) {
-    windowSize = initConfig.screenSize;
+Engine::Engine(const EngineInitConfig& initConfig,
+               Ref<PresentationProvider> presentation)
+    : presentation(presentation) {
     this->initConfig = initConfig;
-    initWindow();
     initVulkan();
     reloadSwapchain();
     initFrameData();
@@ -410,3 +395,4 @@ Mesh* Engine::createMesh(size_t verticesSize, uint32_t indicesCount) {
 
     return mesh;
 }
+}  // namespace val

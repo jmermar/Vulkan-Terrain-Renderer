@@ -1,8 +1,7 @@
 #pragma once
 #include <array>
+#include <cstdint>
 #include <cstring>
-
-#include "types.hpp"
 
 template <typename T, size_t SIZE>
 class Pool {

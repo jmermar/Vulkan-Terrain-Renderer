@@ -3,38 +3,19 @@
 
 #include <cassert>
 
+#include "../foundation/memory.hpp"
 #include "binding.hpp"
 #include "commands.hpp"
 #include "gpu_resources.hpp"
-#include "memory.hpp"
 #include "raii.hpp"
 #include "types.hpp"
-class Window {
-   private:
-    SDL_Window* window{};
-    Size size{};
 
+namespace val {
+
+class PresentationProvider {
    public:
-    void init(const EngineInitConfig& initConfig) {
-        free();
-        size = initConfig.screenSize;
-        window = SDL_CreateWindow(initConfig.appName, initConfig.screenSize.w,
-                                  initConfig.screenSize.h,
-                                  SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
-    }
-    void free() {
-        if (window) {
-            SDL_DestroyWindow(window);
-            window = 0;
-        }
-    }
-
-    Window() = default;
-    ~Window() { free(); }
-
-    Window(const EngineInitConfig& config) : Window() { init(config); }
-
-    operator SDL_Window*() { return window; }
+    virtual VkSurfaceKHR getSurface(VkInstance ins) = 0;
+    virtual Size getSize() = 0;
 };
 
 class Engine {
@@ -85,7 +66,7 @@ class Engine {
     bool shouldRegenerate = false;
 
     // System
-    Window window;
+    Ref<PresentationProvider> presentation;
 
     // Vulkan Components
     vk::raii::Context ctx;
@@ -117,7 +98,6 @@ class Engine {
 
     DeletionQueue deletionQueue;
 
-    void initWindow();
     void initVulkan();
     void reloadSwapchain();
     void initFrameData();
@@ -126,7 +106,8 @@ class Engine {
 
    public:
     Engine() = default;
-    Engine(const EngineInitConfig& initConfig);
+    Engine(const EngineInitConfig& initConfig,
+           Ref<PresentationProvider> presentation);
 
     void update();
 
@@ -172,6 +153,5 @@ class Engine {
     }
 
     void waitFinishAllCommands() { device.waitIdle(); }
-
-    SDL_Window* getWindow() { return window; }
 };
+}  // namespace val

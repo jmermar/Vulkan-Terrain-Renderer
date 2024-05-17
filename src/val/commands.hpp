@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gpu_resources.hpp"
+namespace val {
 class GraphicsPipeline;
 class CommandBuffer {
     friend class Engine;
@@ -129,3 +130,4 @@ class CommandBuffer {
         cmd.bindVertexBuffers(0, 1, &vertices, &offset);
     }
 };
+}  // namespace val

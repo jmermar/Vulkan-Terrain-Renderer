@@ -1,17 +1,17 @@
 #pragma once
 #include <cstdint>
-#include <memory.hpp>
 #include <unordered_map>
 
-#include "engine.hpp"
+#include "../val/vulkan_abstraction.hpp"
 #include "terrain.hpp"
-// This file should act as render frontend
 
+namespace engine {
+
+class Window;
 struct RendererConfig {
     uint32_t width;
     uint32_t height;
 };
-
 struct Camera {
     float w{1}, h{1};
     float fov{90};
@@ -27,16 +27,17 @@ struct Camera {
 
 enum class KeyState { PRESSED, RELEASED, HOLD };
 
-class Renderer {
+class Engine {
    private:
-    std::unique_ptr<Engine> engine;
-    std::unique_ptr<BufferWriter> writer;
+    std::unique_ptr<Window> presentation;
+    std::unique_ptr<val::Engine> engine;
+    std::unique_ptr<val::BufferWriter> writer;
     std::unique_ptr<TerrainRenderer> terrainRenderer;
 
     std::unordered_map<SDL_Scancode, KeyState> keyStates;
 
-    Texture* frameBuffer;
-    Texture* depthBuffer;
+    val::Texture* frameBuffer;
+    val::Texture* depthBuffer;
 
     bool _shouldClose = false;
 
@@ -46,8 +47,8 @@ class Renderer {
     } mouseCaputure;
 
    public:
-    Renderer(const RendererConfig& config);
-    ~Renderer();
+    Engine(const RendererConfig& config);
+    ~Engine();
 
     KeyState getKeyState(SDL_Scancode key) {
         if (keyStates.contains(key)) return keyStates[key];
@@ -72,3 +73,4 @@ class Renderer {
     bool shouldClose();
     void render(Camera& camera);
 };
+}  // namespace engine

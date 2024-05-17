@@ -1,7 +1,7 @@
 #include "commands.hpp"
 
 #include "pipelines.hpp"
-
+namespace val {
 void CommandBuffer::begin() {
     cmd.reset();
     vk::CommandBufferBeginInfo cmdBeginInfo;
@@ -251,3 +251,4 @@ void CommandBuffer::_pushConstants(GraphicsPipeline& pipeline, const void* data,
     cmd.pushConstants(pipeline.layout, vk::ShaderStageFlagBits::eAll, 0, size,
                       data);
 }
+}  // namespace val

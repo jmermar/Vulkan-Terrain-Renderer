@@ -4,6 +4,8 @@
 
 #include "types.hpp"
 
+namespace val {
+
 constexpr uint32_t TEXTURE_BIND = 0;
 constexpr uint32_t STORAGE_BIND = 1;
 
@@ -129,3 +131,4 @@ BindPoint<StorageBuffer> GlobalBinding::bindStorageBuffer(
 
     return {bindPoint};
 }
+}  // namespace val

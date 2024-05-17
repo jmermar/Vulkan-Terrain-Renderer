@@ -1,9 +1,10 @@
 #pragma once
 
-#include "engine.hpp"
 #include "gpu_resources.hpp"
+#include "system.hpp"
 #include "types.hpp"
 
+namespace val {
 class GraphicsPipeline {
     friend class CommandBuffer;
     friend class PipelineBuilder;
@@ -109,3 +110,4 @@ class PipelineBuilder {
 
     GraphicsPipeline build();
 };
+}  // namespace val

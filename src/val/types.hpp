@@ -7,6 +7,9 @@
 #include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
+#include "../foundation/foundation.hpp"
+
+namespace val {
 constexpr uint32_t FRAMES_IN_FLIGHT = 2;
 
 enum class PresentationFormat : uint32_t {
@@ -45,24 +48,6 @@ enum class PolygonCullMode : uint32_t {
     CW = VK_CULL_MODE_BACK_BIT
 };
 
-struct Size {
-    uint32_t w{}, h{};
-};
-
-struct Point {
-    int32_t x{}, y{};
-};
-
-struct Region2D {
-    uint32_t x{}, y{};
-    uint32_t w{}, h{};
-};
-
-struct Rect {
-    int32_t x{}, y{};
-    uint32_t w{}, h{};
-};
-
 struct EngineInitConfig {
     Size screenSize{};
     PresentationFormat presentation;
@@ -75,10 +60,4 @@ struct BindPoint {
     uint32_t bind;
 };
 
-struct CameraData {
-    glm::mat4 proj;
-    glm::mat4 view;
-    glm::vec3 pos;
-    glm::vec3 dir;
-    glm::vec3 up;
-};
+}  // namespace val

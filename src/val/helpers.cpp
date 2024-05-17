@@ -1,8 +1,7 @@
-#pragma once
-#include "types.hpp"
+#include "helpers.hpp"
 
+namespace val {
 namespace helpers {
-
 size_t getTextureSizeFromSizeAndFormat(const Size s, TextureFormat format) {
     int pixelSize = 4;
     if (format == TextureFormat::RGBA16) {
@@ -12,3 +11,4 @@ size_t getTextureSizeFromSizeAndFormat(const Size s, TextureFormat format) {
     return s.w * s.h * pixelSize;
 }
 }  // namespace helpers
+}  // namespace val

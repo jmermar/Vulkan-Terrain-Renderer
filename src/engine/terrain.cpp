@@ -3,38 +3,21 @@
 #include <fstream>
 #include <glm/ext/matrix_transform.hpp>
 
-std::vector<uint8_t> loadShaderBinary(const std::string& filePath) {
-    std::ifstream file(std::string(RESPATH) + "shaders/" + filePath,
-                       std::ios::ate | std::ios::binary);
-
-    if (!file.is_open()) {
-        throw std::runtime_error("Cannot load shader " + filePath);
-    }
-
-    size_t fileSize = (size_t)file.tellg();
-
-    std::vector<uint8_t> buffer(fileSize);
-
-    file.seekg(0);
-
-    file.read((char*)buffer.data(), fileSize);
-    return buffer;
-}
-
-TerrainRenderer::TerrainRenderer(Engine& engine, BufferWriter& writer)
+namespace engine {
+TerrainRenderer::TerrainRenderer(val::Engine& engine, val::BufferWriter& writer)
     : engine(engine), writer(writer) {
-    auto vertShader = loadShaderBinary("test.vert.spv");
-    auto fragShader = loadShaderBinary("test.frag.spv");
+    auto vertShader = file::readBinary("shaders/test.vert.spv");
+    auto fragShader = file::readBinary("shaders/test.frag.spv");
 
-    PipelineBuilder pBuild(engine);
+    val::PipelineBuilder pBuild(engine);
     pass = pBuild.setPushConstant<TerrainPushConstants>()
-               .addVertexInputAttribute(0, VertexInputFormat::FLOAT3)
+               .addVertexInputAttribute(0, val::VertexInputFormat::FLOAT3)
                .addVertexInputAttribute(offsetof(TerrainVertexData, color),
-                                        VertexInputFormat::FLOAT3)
-               .addColorAttachment(TextureFormat::RGBA16)
-               .addStage(std::span(vertShader), ShaderStage::VERTEX)
-               .addStage(std::span(fragShader), ShaderStage::FRAGMENT)
-               .setCullMode(PolygonCullMode::CW)
+                                        val::VertexInputFormat::FLOAT3)
+               .addColorAttachment(val::TextureFormat::RGBA16)
+               .addStage(std::span(vertShader), val::ShaderStage::VERTEX)
+               .addStage(std::span(fragShader), val::ShaderStage::FRAGMENT)
+               .setCullMode(val::PolygonCullMode::CW)
                .depthTestReadWrite()
                .fillTriangles()
                .setVertexStride(sizeof(TerrainVertexData))
@@ -81,8 +64,9 @@ TerrainChunk TerrainRenderer::generateChunk(const glm::vec3& p) {
     return chunk;
 }
 
-void TerrainRenderer::renderPass(Texture* depth, Texture* framebuffer,
-                                 const CameraData& cam, CommandBuffer& cmd) {
+void TerrainRenderer::renderPass(val::Texture* depth, val::Texture* framebuffer,
+                                 const CameraData& cam,
+                                 val::CommandBuffer& cmd) {
     cmd.beginPass(std::span(&framebuffer, 1), depth, true);
     // auto& cmdb = cmd.cmd;
     TerrainPushConstants pc;
@@ -101,3 +85,4 @@ void TerrainRenderer::renderPass(Texture* depth, Texture* framebuffer,
 
     cmd.endPass();
 }
+}  // namespace engine

@@ -4,6 +4,7 @@
 
 #include "raii.hpp"
 #include "types.hpp"
+namespace val {
 struct StorageBuffer {
     BindPoint<StorageBuffer> bindPoint{};
     raii::Buffer buffer{};
@@ -80,3 +81,4 @@ class BufferWriter {
                          indices);
     }
 };
+}  // namespace val

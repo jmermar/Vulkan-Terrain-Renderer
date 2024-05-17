@@ -1,5 +1,5 @@
 file(GLOB_RECURSE SRC
-     "*.cpp"
+     "*.cpp" "engine/*.cpp" "foundation/*.cpp"  "val/*.cpp"
 )
 
 add_executable (${PROJECT_NAME} ${SRC})

@@ -1,5 +1,6 @@
 #include "pipelines.hpp"
 
+namespace val {
 PipelineBuilder::PipelineBuilder(Engine& engine) : engine(engine) {
     rasterizer.frontFace = vk::FrontFace::eCounterClockwise;
     renderInfo.depthAttachmentFormat = vk::Format(TextureFormat::DEPTH32);
@@ -161,3 +162,4 @@ GraphicsPipeline PipelineBuilder::build() {
     layoutInfo.setLayoutCount = 1;
     return GraphicsPipeline(engine.device, createInfo, layoutInfo);
 }
+}  // namespace val
