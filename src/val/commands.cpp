@@ -217,7 +217,7 @@ void CommandBuffer::beginPass(std::span<Texture*> framebuffers,
     attachInfo.storeOp = vk::AttachmentStoreOp::eStore;
     for (size_t i = 0; i < framebuffers.size(); i++) {
         auto texture = framebuffers[i];
-        attachInfo.imageView = texture->imageView;
+        attachInfo.imageView = *texture->imageView;
         colorAttachments[i] = attachInfo;
         area = texture->size;
     }
@@ -226,7 +226,7 @@ void CommandBuffer::beginPass(std::span<Texture*> framebuffers,
     renderInfo.layerCount = 1;
 
     if (depthBuffer) {
-        depthInfo.imageView = depthBuffer->imageView;
+        depthInfo.imageView = *depthBuffer->imageView;
         depthInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
         depthInfo.loadOp = clearDepth ? vk::AttachmentLoadOp::eClear
                                       : vk::AttachmentLoadOp::eLoad;
@@ -243,12 +243,12 @@ void CommandBuffer::beginPass(std::span<Texture*> framebuffers,
 void CommandBuffer::endPass() { cmd.endRendering(); }
 
 void CommandBuffer::_bindPipeline(GraphicsPipeline& pipeline) {
-    cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.pipeline);
+    cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, *pipeline.pipeline);
 }
 
 void CommandBuffer::_pushConstants(GraphicsPipeline& pipeline, const void* data,
                                    uint32_t size) {
-    cmd.pushConstants(pipeline.layout, vk::ShaderStageFlagBits::eAll, 0, size,
+    cmd.pushConstants(*pipeline.layout, vk::ShaderStageFlagBits::eAll, 0, size,
                       data);
 }
 }  // namespace val

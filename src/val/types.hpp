@@ -1,10 +1,6 @@
 #pragma once
-#include <vulkan/vulkan_core.h>
-
 #include <cstdint>
 #include <glm/glm.hpp>
-#include <vulkan/vulkan.hpp>
-#include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
 #include "../foundation/foundation.hpp"

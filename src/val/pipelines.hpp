@@ -18,7 +18,7 @@ class GraphicsPipeline {
                      const vk::PipelineLayoutCreateInfo& layoutInfo) {
         layout = device.createPipelineLayout(layoutInfo);
         auto pci = pipelineInfo;
-        pci.layout = layout;
+        pci.layout = *layout;
         pipeline = device.createGraphicsPipeline(nullptr, pci);
     }
 

@@ -25,7 +25,7 @@ PipelineBuilder& PipelineBuilder::addStage(const std::span<uint8_t> shaderData,
 
     vk::PipelineShaderStageCreateInfo stageInfo;
     stageInfo.pName = "main";
-    stageInfo.module = modules.back();
+    stageInfo.module = *modules.back();
     stageInfo.stage = vk::ShaderStageFlagBits(stage);
     stages.push_back(stageInfo);
     return *this;

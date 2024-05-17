@@ -40,6 +40,6 @@ class GlobalBinding {
         textureBinds.clear();
     }
 
-    vk::DescriptorSetLayout getLayout() { return layout; }
+    vk::DescriptorSetLayout getLayout() { return *layout; }
 };
 }  // namespace val

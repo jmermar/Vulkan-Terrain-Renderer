@@ -123,7 +123,7 @@ void Engine::initFrameData() {
         frame.pool = vk::raii::CommandPool(device, commandPoolInfo);
 
         vk::CommandBufferAllocateInfo cmdAllocInfo;
-        cmdAllocInfo.commandPool = frame.pool;
+        cmdAllocInfo.commandPool = *frame.pool;
         cmdAllocInfo.commandBufferCount = 1;
         cmdAllocInfo.level = vk::CommandBufferLevel::ePrimary;
 
@@ -165,13 +165,13 @@ CommandBuffer Engine::initFrame() {
     }
     auto& frame = frames[frameCounter % FRAMES_IN_FLIGHT];
     static_cast<void>(
-        device.waitForFences({frame.renderFence}, true, 10000000000000));
-    device.resetFences({frame.renderFence});
+        device.waitForFences({*frame.renderFence}, true, 10000000000000));
+    device.resetFences({*frame.renderFence});
 
     std::pair<vk::Result, uint32_t> result;
     try {
         result = swapchain.swapchain.acquireNextImage(10000000000000,
-                                                      frame.swapchainSemaphore);
+                                                      *frame.swapchainSemaphore);
     } catch (vk::OutOfDateKHRError& exc) {
         shouldRegenerate = true;
         frameCounter++;
@@ -180,7 +180,7 @@ CommandBuffer Engine::initFrame() {
 
     imageIndex = result.second;
 
-    auto cmd = CommandBuffer(frame.commandBuffer);
+    auto cmd = CommandBuffer(*frame.commandBuffer);
     cmd.begin();
 
     frame.deletionQueue.clear();
@@ -191,7 +191,7 @@ CommandBuffer Engine::initFrame() {
 void Engine::submitFrame(Texture* backbuffer) {
     auto& frame = frames[frameCounter % FRAMES_IN_FLIGHT];
 
-    auto cmd = CommandBuffer(frame.commandBuffer);
+    auto cmd = CommandBuffer(*frame.commandBuffer);
     auto image = swapchain.images[imageIndex];
     if (backbuffer != nullptr) {
         cmd.transitionImage(backbuffer->image, vk::RemainingMipLevels,
@@ -235,14 +235,14 @@ void Engine::submitFrame(Texture* backbuffer) {
     frame.commandBuffer.end();
 
     vk::CommandBufferSubmitInfo commandBufferSubmitInfo;
-    commandBufferSubmitInfo.commandBuffer = frame.commandBuffer;
+    commandBufferSubmitInfo.commandBuffer = *frame.commandBuffer;
 
     vk::SemaphoreSubmitInfo waitInfo, signalInfo;
 
-    waitInfo.semaphore = frame.swapchainSemaphore;
+    waitInfo.semaphore = *frame.swapchainSemaphore;
     waitInfo.stageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
 
-    signalInfo.semaphore = frame.renderSemaphore;
+    signalInfo.semaphore = *frame.renderSemaphore;
     signalInfo.stageMask = vk::PipelineStageFlagBits2::eAllGraphics;
 
     vk::SubmitInfo2 submitInfo;
@@ -253,7 +253,7 @@ void Engine::submitFrame(Texture* backbuffer) {
     submitInfo.commandBufferInfoCount = 1;
     submitInfo.pCommandBufferInfos = &commandBufferSubmitInfo;
 
-    graphicsQueue.submit2({submitInfo}, frame.renderFence);
+    graphicsQueue.submit2({submitInfo}, *frame.renderFence);
 
     auto sw = *swapchain.swapchain;
 
@@ -319,7 +319,7 @@ Texture* Engine::createTexture(Size size, TextureFormat format,
     viewCreateInfo.viewType = vk::ImageViewType::e2D;
     texture->imageView = device.createImageView(viewCreateInfo);
 
-    texture->bindPoint = bindings.bindTexture(texture->imageView, sampling);
+    texture->bindPoint = bindings.bindTexture(*texture->imageView, sampling);
 
     return texture;
 }
