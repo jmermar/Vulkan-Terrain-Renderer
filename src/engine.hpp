@@ -125,10 +125,8 @@ class Engine {
     void regenerate();
 
    public:
+    Engine() = default;
     Engine(const EngineInitConfig& initConfig);
-    ~Engine();
-
-    bool shouldClose() { return _shouldClose; }
 
     void update();
 
@@ -174,4 +172,6 @@ class Engine {
     }
 
     void waitFinishAllCommands() { device.waitIdle(); }
+
+    SDL_Window* getWindow() { return window; }
 };

@@ -32,7 +32,8 @@ class CommandBuffer {
                            vk::PipelineStageFlagBits2::eAllCommands,
                        vk::PipelineStageFlagBits2 dstStage =
                            vk::PipelineStageFlagBits2::eAllCommands);
-    void bindPipeline(GraphicsPipeline& p, const void* data, uint32_t size);
+    void _bindPipeline(GraphicsPipeline& p);
+    void _pushConstants(GraphicsPipeline& p, const void* data, uint32_t size);
 
    public:
     vk::CommandBuffer cmd;
@@ -96,9 +97,10 @@ class CommandBuffer {
 
     void endPass();
 
+    void bindPipeline(GraphicsPipeline& pipeline) { _bindPipeline(pipeline); }
     template <typename T>
-    void bindPipeline(GraphicsPipeline& pipeline, const T& t) {
-        bindPipeline(pipeline, &t, sizeof(T));
+    void pushConstants(GraphicsPipeline& pipeline, const T& t) {
+        _pushConstants(pipeline, &t, sizeof(T));
     }
     void setViewport(const Rect& viewport) {
         vk::Viewport vp;

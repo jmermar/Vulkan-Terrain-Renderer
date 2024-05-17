@@ -2,6 +2,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include <cstdint>
+#include <glm/glm.hpp>
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_raii.hpp>
@@ -72,4 +73,12 @@ struct EngineInitConfig {
 template <typename T>
 struct BindPoint {
     uint32_t bind;
+};
+
+struct CameraData {
+    glm::mat4 proj;
+    glm::mat4 view;
+    glm::vec3 pos;
+    glm::vec3 dir;
+    glm::vec3 up;
 };

@@ -171,18 +171,7 @@ Engine::Engine(const EngineInitConfig& initConfig) {
     bindings.init(device, physicalDeviceProperties);
 }
 
-Engine::~Engine() { device.waitIdle(); }
-
-void Engine::update() {
-    SDL_Event event;
-    while (SDL_PollEvent(&event)) {
-        switch (event.type) {
-            case SDL_EVENT_QUIT:
-                _shouldClose = true;
-                break;
-        }
-    }
-}
+void Engine::update() {}
 
 CommandBuffer Engine::initFrame() {
     if (shouldRegenerate) {
@@ -320,11 +309,12 @@ Texture* Engine::createTexture(Size size, TextureFormat format,
     imagecreateInfo.arrayLayers = 1;
     imagecreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     imagecreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-    imagecreateInfo.usage =
-        usage | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-        VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-        (format != TextureFormat::DEPTH32 ? VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
-                                          : 0);
+    imagecreateInfo.usage = usage | VK_IMAGE_USAGE_SAMPLED_BIT |
+                            VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                            VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                            (format != TextureFormat::DEPTH32
+                                 ? VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+                                 : VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
     VmaAllocationCreateInfo vmaAlloc = {
         .usage = VMA_MEMORY_USAGE_GPU_ONLY,
@@ -339,7 +329,8 @@ Texture* Engine::createTexture(Size size, TextureFormat format,
     viewCreateInfo.subresourceRange.layerCount = 1;
     viewCreateInfo.subresourceRange.levelCount = mipLevels;
     viewCreateInfo.subresourceRange.aspectMask =
-        vk::ImageAspectFlagBits::eColor;
+        (format != TextureFormat::DEPTH32) ? vk::ImageAspectFlagBits::eColor
+                                           : vk::ImageAspectFlagBits::eDepth;
     viewCreateInfo.viewType = vk::ImageViewType::e2D;
     texture->imageView = device.createImageView(viewCreateInfo);
 

@@ -114,6 +114,11 @@ PipelineBuilder& PipelineBuilder::depthTestRead() {
     return *this;
 }
 
+PipelineBuilder& PipelineBuilder::setTessellation(uint32_t controlPoints) {
+    tessellation.patchControlPoints = controlPoints;
+    return *this;
+}
+
 GraphicsPipeline PipelineBuilder::build() {
     vk::PipelineViewportStateCreateInfo viewport;
     viewport.viewportCount = 1;

@@ -20,6 +20,9 @@ class GraphicsPipeline {
         pci.layout = layout;
         pipeline = device.createGraphicsPipeline(nullptr, pci);
     }
+
+   public:
+    GraphicsPipeline() = default;
 };
 
 class PipelineBuilder {
@@ -101,6 +104,8 @@ class PipelineBuilder {
     PipelineBuilder& disableDepthTest();
     PipelineBuilder& depthTestRead();
     PipelineBuilder& depthTestReadWrite();
+
+    PipelineBuilder& setTessellation(uint32_t controlPoints);
 
     GraphicsPipeline build();
 };

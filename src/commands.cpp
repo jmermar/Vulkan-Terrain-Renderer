@@ -242,9 +242,12 @@ void CommandBuffer::beginPass(std::span<Texture*> framebuffers,
 
 void CommandBuffer::endPass() { cmd.endRendering(); }
 
-void CommandBuffer::bindPipeline(GraphicsPipeline& pipeline, const void* data,
-                                 uint32_t size) {
+void CommandBuffer::_bindPipeline(GraphicsPipeline& pipeline) {
     cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.pipeline);
+}
+
+void CommandBuffer::_pushConstants(GraphicsPipeline& pipeline, const void* data,
+                                   uint32_t size) {
     cmd.pushConstants(pipeline.layout, vk::ShaderStageFlagBits::eAll, 0, size,
                       data);
 }
