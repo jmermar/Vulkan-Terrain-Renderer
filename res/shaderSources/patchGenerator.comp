@@ -2,37 +2,35 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_EXT_nonuniform_qualifier : require
 
-#define PATCH_SIZE 32
+#define PATCH_SIZE 128
 #define MAX_PATCH 128
 #define NUM_PATCHES (MAX_PATCH * MAX_PATCH)
 
 layout(local_size_x = 256, local_size_y =1, local_size_z = 1) in;
 
-//Temp
-
-struct PatchData {
-    vec4 vertices[4];
-};
-
 layout(binding = 1) buffer Patches {
- 	  PatchData patches[];
-} patches[];
+    vec4 vertices[];
+} vertices[];
 
 layout(binding = 1) buffer GlobalData {
-    uint numVertices;
-    uint patchIndex;
-    uint pad[2];
-} global[];
+    uint vertexCount;
+    uint instanceCount;
+    uint firstVertex;
+    uint firstInstance;
+} draw[];
 
 layout(push_constant) uniform PushConstants {
     vec3 camPos;
     uint patchesBind;
-    uint globalBind;
+    uint drawBind;
 };
 
 void main() {
     if (gl_LocalInvocationID.x == 0) {
-        global[globalBind].patchIndex = 0;
+        draw[drawBind].vertexCount = 0;
+        draw[drawBind].instanceCount = 1;
+        draw[drawBind].firstInstance = 0;
+        draw[drawBind].firstVertex = 0;
     }
     barrier();
 
@@ -42,14 +40,12 @@ void main() {
         vec4 topLeft = (vec4(MAX_PATCH * 0.5, 0, MAX_PATCH * 0.5, 0) - vec4(px, 0, pz, 0)) * PATCH_SIZE;
         topLeft.w = 1;
         topLeft += vec4(floor(camPos.x / PATCH_SIZE), 0, floor(camPos.z / PATCH_SIZE), 0) * PATCH_SIZE;
-        PatchData cPatch;
 
-        cPatch.vertices[0] = topLeft + vec4(0, 0, PATCH_SIZE, 0);
-        cPatch.vertices[1] = topLeft + vec4(PATCH_SIZE, 0, PATCH_SIZE, 0);
-        cPatch.vertices[2] = topLeft + vec4(PATCH_SIZE, 0, 0, 0);
-        cPatch.vertices[3] = topLeft;
-
-        uint idx = atomicAdd(global[globalBind].patchIndex, 1);
-        if (idx < NUM_PATCHES) patches[patchesBind].patches[idx] = cPatch;
+        uint fv = atomicAdd(draw[drawBind].vertexCount, 4);
+        
+        vertices[patchesBind].vertices[fv] = topLeft;
+        vertices[patchesBind].vertices[fv + 1] = topLeft + vec4(PATCH_SIZE, 0, 0, 0);
+        vertices[patchesBind].vertices[fv + 2] = topLeft + vec4(0, 0, PATCH_SIZE, 0);
+        vertices[patchesBind].vertices[fv + 3] = topLeft + vec4(PATCH_SIZE, 0, PATCH_SIZE, 0);
     }
 }

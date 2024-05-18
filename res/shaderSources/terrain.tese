@@ -43,38 +43,38 @@ float snoise(vec2 v){
 }
 
 float getHeight(vec2 v) {
-	float noise =
-	snoise(v / vec2(256)) +
-	snoise(v / vec2(128)) * (1/2.0) + 
-	snoise(v / vec2(64)) * (1/4.0) +
-	snoise(v / vec2(32)) * (1/8.0) +
-	snoise(v / vec2(16)) * (1/16.0) +
-	snoise(v / vec2(8)) * (1/32.0) +
-	snoise(v / vec2(4)) * (1/64.0);
-
-	noise /= (1/2.0) + (1/4.0) + (1/8.0) + (1/16.0) + (1/32.0) + (1/64.0);
-
-	return noise * 0.5 + 0.5;
+  float f = 1.0 / 128.0;
+  float amplitude = 1;
+  float ampAcc = 0;  
+  float noiseAcc = 0;
+  for(int i = 0; i < 8; i++) {
+    noiseAcc += (snoise(v * f) * 0.5 + 0.5) * amplitude;
+    ampAcc += amplitude;
+    f *= 4;
+    amplitude /= 4;
+  }
+  
+  return noiseAcc / ampAcc;
 }
 
 void main() {
   float u = gl_TessCoord.x;
   float v = gl_TessCoord.y;
 
-  vec4 p0 = gl_in[0].gl_Position;
-  vec4 p1 = gl_in[1].gl_Position;
-  vec4 p2 = gl_in[2].gl_Position;
-  vec4 p3 = gl_in[3].gl_Position;
+  vec4 p00 = gl_in[0].gl_Position;
+  vec4 p01 = gl_in[1].gl_Position;
+  vec4 p10 = gl_in[2].gl_Position;
+  vec4 p11 = gl_in[3].gl_Position;
 
-  worldPos = p0 * (1.0 - u) *(1.0 - v) + 
-      p1 * u * (1.0 - v) +
-      p3 * v * (1.0 - u) + 
-      p2 * v * u;
+  vec4 p0 = (p01 - p00) * u + p00;
+  vec4 p1 = (p11 - p10) * u + p10;
+  worldPos = (p1 - p0) * v + p0;
+
 
   worldPos.y = getHeight(vec2(worldPos.x, worldPos.z));
 	outColor = vec3(clamp(worldPos.y, 0.3, 1));
 	worldPos.y *= 90;
-	uv.x = worldPos.x / 32;
-	uv.y = worldPos.z / 32;
+	uv.x = worldPos.x / 8;
+	uv.y = worldPos.z / 8;
 	gl_Position = proj * view * worldPos;
 }

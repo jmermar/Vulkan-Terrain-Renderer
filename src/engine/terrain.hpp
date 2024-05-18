@@ -11,16 +11,17 @@ struct TerrainPushConstants {
     val::BindPoint<val::Texture> textures[4];
 };
 
-struct ComputeGlobalData {
-    uint32_t numVertices;
-    uint32_t patchIndex;
-    uint32_t pad[2];
+struct DrawIndirectCommand {
+    uint32_t vertexCount;
+    uint32_t instanceCount;
+    uint32_t firstVertex;
+    uint32_t firstInstance;
 };
 
 struct TerrainComputePushConstants {
     glm::vec3 camPos;
     val::BindPoint<val::StorageBuffer> patchesBind;
-    val::BindPoint<val::StorageBuffer> globalBind;
+    val::BindPoint<val::StorageBuffer> drawIndirectBind;
 };
 
 struct TerrainChunk {
@@ -40,7 +41,7 @@ class TerrainRenderer {
     val::GraphicsPipeline pass{};
     val::ComputePipeline patchGenerator{};
     val::StorageBuffer* vertexOutput;
-    val::StorageBuffer* computeGlobalData;
+    val::StorageBuffer* drawIndirectCommand;
 
     struct {
         val::Texture* grass;

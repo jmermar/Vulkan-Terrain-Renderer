@@ -42,7 +42,7 @@ void TerrainRenderer::initRenderPass()
                .addStage(std::span(fragShader), val::ShaderStage::FRAGMENT)
                .addStage(std::span(teseShader), val::ShaderStage::TESSELATION_EVALUATION)
                .addStage(std::span(tescShader), val::ShaderStage::TESSELATION_CONTROL)
-               .setCullMode(val::PolygonCullMode::CW)
+               .setCullMode(val::PolygonCullMode::NONE)
                .setTessellation(4)
                .depthTestReadWrite()
                .tessellationFill()
@@ -58,7 +58,7 @@ void TerrainRenderer::initCompute()
     vertexOutput = engine.createStorageBuffer(NUM_PATCHES * 4 * sizeof(TerrainVertexData), vk::BufferUsageFlagBits::eVertexBuffer);
     
     patchGenerator = cpBuild.setShader(compShader).setPushConstant<TerrainComputePushConstants>().build();
-    computeGlobalData = engine.createStorageBuffer(sizeof(ComputeGlobalData));
+    drawIndirectCommand = engine.createStorageBuffer(sizeof(DrawIndirectCommand), vk::BufferUsageFlagBits::eIndirectBuffer);
 }
 TerrainRenderer::TerrainRenderer(val::Engine& engine, val::BufferWriter& writer)
     : engine(engine), writer(writer) {
@@ -73,7 +73,7 @@ void TerrainRenderer::renderPass(val::Texture* depth, val::Texture* framebuffer,
     cmd.bindPipeline(patchGenerator);
 
     TerrainComputePushConstants computePushConstants;
-    computePushConstants.globalBind = computeGlobalData->bindPoint;
+    computePushConstants.drawIndirectBind = drawIndirectCommand->bindPoint;
     computePushConstants.patchesBind = vertexOutput->bindPoint;
     computePushConstants.camPos = cam.pos;
 
@@ -97,7 +97,7 @@ void TerrainRenderer::renderPass(val::Texture* depth, val::Texture* framebuffer,
     cmd.pushConstants(pass, pc);
     cmd.setViewport({0, 0, framebuffer->size.w, framebuffer->size.h});
     cmd.bindVertexBuffer(vertexOutput);
-    cmdb.draw(NUM_PATCHES * 4, 1, 0, 0);
+    cmdb.drawIndirect(drawIndirectCommand->buffer, 0, 1, sizeof(DrawIndirectCommand));
 
     cmd.endPass();
 }

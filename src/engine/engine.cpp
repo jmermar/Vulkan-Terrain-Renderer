@@ -66,7 +66,7 @@ Engine::Engine(const RendererConfig& config) {
     presentation = std::make_unique<Window>(winSize, "Vulkan Terrain");
     val::EngineInitConfig initConfig;
     initConfig.appName = "Vulkan Terrain";
-    initConfig.presentation = val::PresentationFormat::Fifo;
+    initConfig.presentation = val::PresentationFormat::Mailbox;
     initConfig.useImGUI = false;
     initConfig.screenSize = {.w = 1920, .h = 1080};
 
