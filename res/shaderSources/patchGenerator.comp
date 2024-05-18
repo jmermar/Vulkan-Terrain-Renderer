@@ -2,7 +2,7 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_EXT_nonuniform_qualifier : require
 
-#define PATCH_SIZE 16
+#define PATCH_SIZE 32
 #define MAX_PATCH 128
 #define NUM_PATCHES (MAX_PATCH * MAX_PATCH)
 
@@ -31,7 +31,9 @@ layout(push_constant) uniform PushConstants {
 };
 
 void main() {
-    global[globalBind].patchIndex = 0;
+    if (gl_LocalInvocationID.x == 0) {
+        global[globalBind].patchIndex = 0;
+    }
     barrier();
 
     if (gl_GlobalInvocationID.x < NUM_PATCHES) {

@@ -8,7 +8,7 @@ struct TerrainVertexData {
 
 struct TerrainPushConstants {
     glm::mat4 proj, view, model;
-    val::BindPoint<val::Texture> grassBind;
+    val::BindPoint<val::Texture> textures[4];
 };
 
 struct ComputeGlobalData {
@@ -39,10 +39,19 @@ class TerrainRenderer {
     val::BufferWriter& writer;
     val::GraphicsPipeline pass{};
     val::ComputePipeline patchGenerator{};
-    val::Texture* grass;
     val::StorageBuffer* vertexOutput;
     val::StorageBuffer* computeGlobalData;
 
+    struct {
+        val::Texture* grass;
+        val::Texture* snow;
+        val::Texture* rock1;
+        val::Texture* rock2;
+    } textures;
+
+    void loadTextures();
+    void initRenderPass();
+    void initCompute();
 
    public:
     TerrainRenderer(val::Engine& engine, val::BufferWriter& writer);

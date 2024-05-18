@@ -143,7 +143,7 @@ void Engine::render(Camera& camera) {
 
         cmd.transitionTexture(frameBuffer, vk::ImageLayout::eUndefined,
                               vk::ImageLayout::eTransferDstOptimal);
-        cmd.clearImage(frameBuffer->image, 1, 0.5, 0, 1);
+        cmd.clearImage(frameBuffer->image, 0.2, 0.4, 0.8, 1);
         cmd.transitionTexture(frameBuffer, vk::ImageLayout::eTransferDstOptimal,
                               vk::ImageLayout::eColorAttachmentOptimal);
 

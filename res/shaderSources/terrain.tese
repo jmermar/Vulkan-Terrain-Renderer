@@ -4,6 +4,7 @@ layout(quads, equal_spacing, ccw) in;
 
 layout (location = 0) out vec3 outColor;
 layout (location = 1) out vec2 uv;
+layout (location = 2) out vec4 worldPos;
 
 layout(push_constant) uniform constants {
   mat4 proj;
@@ -43,35 +44,37 @@ float snoise(vec2 v){
 
 float getHeight(vec2 v) {
 	float noise =
-	snoise(v / vec2(128)) +
-	snoise(v / vec2(64)) * (1/2.0) + 
-	snoise(v / vec2(32)) * (1/4.0) +
-	snoise(v / vec2(16)) * (1/8.0) +
-	snoise(v / vec2(8)) * (1/16.0);
+	snoise(v / vec2(256)) +
+	snoise(v / vec2(128)) * (1/2.0) + 
+	snoise(v / vec2(64)) * (1/4.0) +
+	snoise(v / vec2(32)) * (1/8.0) +
+	snoise(v / vec2(16)) * (1/16.0) +
+	snoise(v / vec2(8)) * (1/32.0) +
+	snoise(v / vec2(4)) * (1/64.0);
 
-	noise /= (1/2.0) + (1/4.0) + (1/8.0) + (1/16.0);
+	noise /= (1/2.0) + (1/4.0) + (1/8.0) + (1/16.0) + (1/32.0) + (1/64.0);
 
 	return noise * 0.5 + 0.5;
 }
 
 void main() {
-    float u = gl_TessCoord.x;
-    float v = gl_TessCoord.y;
+  float u = gl_TessCoord.x;
+  float v = gl_TessCoord.y;
 
-    vec4 p0 = gl_in[0].gl_Position;
-    vec4 p1 = gl_in[1].gl_Position;
-    vec4 p2 = gl_in[2].gl_Position;
-    vec4 p3 = gl_in[3].gl_Position;
+  vec4 p0 = gl_in[0].gl_Position;
+  vec4 p1 = gl_in[1].gl_Position;
+  vec4 p2 = gl_in[2].gl_Position;
+  vec4 p3 = gl_in[3].gl_Position;
 
-    vec4 worldPos = p0 * (1.0 - u) *(1.0 - v) + 
-        p1 * u * (1.0 - v) +
-        p3 * v * (1.0 - u) + 
-        p2 * v * u;
+  worldPos = p0 * (1.0 - u) *(1.0 - v) + 
+      p1 * u * (1.0 - v) +
+      p3 * v * (1.0 - u) + 
+      p2 * v * u;
 
-    worldPos.y = getHeight(vec2(worldPos.x, worldPos.z));
+  worldPos.y = getHeight(vec2(worldPos.x, worldPos.z));
 	outColor = vec3(clamp(worldPos.y, 0.3, 1));
-	worldPos.y *= 50;
-	uv.x = worldPos.x;
-	uv.y = worldPos.z;
+	worldPos.y *= 90;
+	uv.x = worldPos.x / 32;
+	uv.y = worldPos.z / 32;
 	gl_Position = proj * view * worldPos;
 }

@@ -5,7 +5,7 @@ int main() {
     engine::Camera cam;
     cam.position.y = 1;
     float deltaTime = 60 / 1000.f;
-    float moveSpeed = 4.f;
+    float moveSpeed = 100.f;
     float sen = 20.f;
     bool capture = false;
     while (!engine.shouldClose()) {
