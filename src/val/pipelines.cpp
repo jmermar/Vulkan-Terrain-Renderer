@@ -6,6 +6,8 @@ PipelineBuilder::PipelineBuilder(Engine& engine) : engine(engine) {
     renderInfo.depthAttachmentFormat = vk::Format(TextureFormat::DEPTH32);
     pushConstant.stageFlags = vk::ShaderStageFlagBits::eAll;
 
+    
+
     dynamicState.dynamicStateCount = 2;
     dynamicState.pDynamicStates = dynamicStates;
 
@@ -153,6 +155,7 @@ GraphicsPipeline PipelineBuilder::build() {
     createInfo.pDepthStencilState = &depthStencil;
     createInfo.pDynamicState = &dynamicState;
     createInfo.pNext = &renderInfo;
+    createInfo.pTessellationState = &tessellation;
 
     vk::PipelineLayoutCreateInfo layoutInfo;
     layoutInfo.pushConstantRangeCount = 1;

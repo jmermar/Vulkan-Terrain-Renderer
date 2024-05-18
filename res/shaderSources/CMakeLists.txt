@@ -4,6 +4,8 @@ file(GLOB_RECURSE GLSL_SOURCE_FILES
     "*.frag"
     "*.vert"
     "*.comp"
+    "*.tesc"
+    "*.tese"
     )
 
 foreach(GLSL ${GLSL_SOURCE_FILES})

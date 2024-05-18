@@ -3,9 +3,9 @@
 int main() {
     engine::Engine engine({1920, 1080});
     engine::Camera cam;
-    cam.position.y = 1;
+    cam.position.y = 60;
     float deltaTime = 60 / 1000.f;
-    float moveSpeed = 3.f;
+    float moveSpeed = 4.f;
     float sen = 20.f;
     bool capture = false;
     while (!engine.shouldClose()) {

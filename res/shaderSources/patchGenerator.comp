@@ -2,23 +2,16 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_EXT_nonuniform_qualifier : require
 
-#define PIXELS_PER_TILE 16
-#define MAX_NUM_LIGHTS_PER_TILE 1024
-
-#define PATCH_SIZE 128.0
-#define MAX_PATCH 16
+#define PATCH_SIZE 64.0
+#define MAX_PATCH 32
 #define NUM_PATCHES (MAX_PATCH * MAX_PATCH)
 
-layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 //Temp
-struct VertexData {
-    vec3 pos;
-    float pad;
-};
 
 struct PatchData {
-    VertexData vertices[6];
+    vec4 vertices[4];
 };
 
 layout(binding = 1) buffer Patches {
@@ -28,6 +21,7 @@ layout(binding = 1) buffer Patches {
 layout(binding = 1) buffer GlobalData {
     uint numVertices;
     uint patchIndex;
+    uint pad[2];
 } global[];
 
 layout(push_constant) uniform PushConstants {
@@ -37,28 +31,28 @@ layout(push_constant) uniform PushConstants {
 };
 
 void main() {
-    if (gl_GlobalInvocationID.x == 0) {
+    if (gl_GlobalInvocationID.x == 0 && gl_GlobalInvocationID.y == 0) {
         global[globalBind].numVertices = 0;
         global[globalBind].patchIndex = 0;
     }
-    if (gl_GlobalInvocationID.x >= NUM_PATCHES) {
-        return;
+
+    barrier();
+
+    if (gl_GlobalInvocationID.x < MAX_PATCH && gl_GlobalInvocationID.y < MAX_PATCH) {
+        uint px = gl_GlobalInvocationID.x;
+        uint pz = gl_GlobalInvocationID.y;
+        vec4 topLeft = (vec4(MAX_PATCH * 0.5, 0, MAX_PATCH * 0.5, 0) - vec4(px, 0, pz, 0)) * PATCH_SIZE;
+        topLeft.w = 1;
+        topLeft += vec4(floor(camPos.x / PATCH_SIZE), 0, floor(camPos.z / PATCH_SIZE), 0) * PATCH_SIZE;
+        PatchData cPatch;
+
+        cPatch.vertices[0] = topLeft + vec4(0, 0, PATCH_SIZE, 0);
+        cPatch.vertices[1] = topLeft + vec4(PATCH_SIZE, 0, PATCH_SIZE, 0);
+        cPatch.vertices[2] = topLeft + vec4(PATCH_SIZE, 0, 0, 0);
+        cPatch.vertices[3] = topLeft;
+
+        uint idx = atomicAdd(global[globalBind].patchIndex, 1);
+
+        patches[patchesBind].patches[idx] = cPatch;
     }
-
-    uint px = gl_GlobalInvocationID.x % MAX_PATCH;
-    uint pz = gl_GlobalInvocationID.x / MAX_PATCH;
-    vec3 topLeft = vec3(float(px), 0, float(pz)) * PATCH_SIZE;
-    PatchData cPatch;
-    cPatch.vertices[0].pos = topLeft;
-    cPatch.vertices[1].pos = topLeft + vec3(PATCH_SIZE, 0, PATCH_SIZE);
-    cPatch.vertices[2].pos = topLeft + vec3(PATCH_SIZE, 0, 0);
-    
-    cPatch.vertices[3].pos = topLeft;
-    cPatch.vertices[4].pos = topLeft + vec3(0, 0, PATCH_SIZE);
-    cPatch.vertices[5].pos = topLeft + vec3(PATCH_SIZE, 0, PATCH_SIZE);
-
-    atomicAdd(global[globalBind].numVertices, 6);
-    uint idx = atomicAdd(global[globalBind].patchIndex, 1);
-
-    patches[patchesBind].patches[idx] = cPatch;
 }

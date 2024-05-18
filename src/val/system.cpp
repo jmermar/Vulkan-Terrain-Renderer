@@ -37,7 +37,8 @@ void Engine::initVulkan() {
 
     vk::PhysicalDeviceFeatures features10{};
     features10.multiDrawIndirect = true;
-
+    features10.tessellationShader = true;
+    
     vkb::PhysicalDeviceSelector selector{vkb_inst};
     vkb::PhysicalDevice physicalDevice =
         selector.set_minimum_version(1, 3)

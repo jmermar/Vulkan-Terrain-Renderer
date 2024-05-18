@@ -135,6 +135,12 @@ class PipelineBuilder {
         return *this;
     }
 
+    PipelineBuilder& tessellationFill() {
+        assembly.topology = vk::PrimitiveTopology::ePatchList;
+        rasterizer.polygonMode = vk::PolygonMode::eFill;
+        return *this;
+    }
+
     PipelineBuilder& addColorAttachment(TextureFormat format);
     PipelineBuilder& clearColorAttachments() {
         colorAttachmentFormats.clear();
