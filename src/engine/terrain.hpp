@@ -30,7 +30,7 @@ struct TerrainChunk {
 };
 
 constexpr float PATCH_LENGTH = 128;
-constexpr uint32_t MAX_PATCH = 32;
+constexpr uint32_t MAX_PATCH = 128;
 constexpr uint32_t NUM_PATCHES = MAX_PATCH * MAX_PATCH;
 
 class TerrainRenderer {

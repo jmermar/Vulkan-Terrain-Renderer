@@ -4,7 +4,7 @@
 #include <glm/ext/matrix_transform.hpp>
 
 namespace engine {
-    constexpr uint32_t INVOCATION_SIZE = 16;
+    constexpr uint32_t INVOCATION_SIZE = 256;
 TerrainRenderer::TerrainRenderer(val::Engine& engine, val::BufferWriter& writer)
     : engine(engine), writer(writer) {
     auto vertShader = file::readBinary("shaders/test.vert.spv");
@@ -55,11 +55,9 @@ void TerrainRenderer::renderPass(val::Texture* depth, val::Texture* framebuffer,
 
     auto cmdb = cmd.cmd;
 
-    cmdb.dispatch(MAX_PATCH / INVOCATION_SIZE, MAX_PATCH / INVOCATION_SIZE, 1);
+    cmdb.dispatch(NUM_PATCHES / INVOCATION_SIZE, 1, 1);
 
     cmd.memoryBarrier(vk::PipelineStageFlagBits2::eComputeShader, vk::AccessFlagBits2::eMemoryRead|vk::AccessFlagBits2::eMemoryWrite, vk::PipelineStageFlagBits2::eAllCommands, vk::AccessFlagBits2::eMemoryRead);
-
-
 
     cmd.beginPass(std::span(&framebuffer, 1), depth, true);
     TerrainPushConstants pc;
