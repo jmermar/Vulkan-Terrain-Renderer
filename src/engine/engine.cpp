@@ -2,6 +2,7 @@
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
+#include <imgui_impl_sdl3.h>
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -33,6 +34,8 @@ class Window : public val::PresentationProvider {
         SDL_GetWindowSize(window, &w, &h);
         return {(uint32_t)w, (uint32_t)h};
     }
+
+    void initImgui() override { ImGui_ImplSDL3_InitForVulkan(window); }
 };
 
 void Camera::rotateX(float degrees) {
@@ -61,13 +64,14 @@ glm::mat4 Camera::getProjection() {
     return ret;
 }
 
-Engine::Engine(const RendererConfig& config) {
+Engine::Engine(const RendererConfig& config, std::function<void(Engine&)> cb) {
+    guiCallback = cb;
     Size winSize = {.w = config.width, .h = config.height};
     presentation = std::make_unique<Window>(winSize, "Vulkan Terrain");
     val::EngineInitConfig initConfig;
     initConfig.appName = "Vulkan Terrain";
     initConfig.presentation = val::PresentationFormat::Mailbox;
-    initConfig.useImGUI = false;
+    initConfig.useImGUI = true;
     initConfig.screenSize = {.w = 1920, .h = 1080};
 
     engine = std::make_unique<val::Engine>(initConfig, presentation.get());
@@ -79,6 +83,8 @@ Engine::Engine(const RendererConfig& config) {
     depthBuffer =
         engine->createTexture({1920, 1080}, val::TextureFormat::DEPTH32);
     engine->createMesh(4, 1);
+
+    time.ticks = SDL_GetTicks();
 }
 
 Engine::~Engine() { engine->waitFinishAllCommands(); }
@@ -127,6 +133,8 @@ void Engine::updateInput() {
 bool Engine::shouldClose() { return _shouldClose; }
 
 void Engine::render(Camera& camera) {
+    time.deltaTime = (SDL_GetTicks() - time.ticks) / 1000.f;
+    time.ticks = SDL_GetTicks();
     engine->update();
 
     auto cmd = engine->initFrame();
@@ -149,7 +157,19 @@ void Engine::render(Camera& camera) {
 
         terrainRenderer->renderPass(depthBuffer, frameBuffer, cd, cmd);
 
+        drawGUI();
+
         engine->submitFrame(frameBuffer);
     }
+}
+
+void Engine::drawGUI() {
+    ImGui_ImplVulkan_NewFrame();
+    ImGui_ImplSDL3_NewFrame();
+    ImGui::NewFrame();
+
+    if (guiCallback) guiCallback(*this);
+
+    ImGui::Render();
 }
 }  // namespace engine

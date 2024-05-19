@@ -1,6 +1,10 @@
 #include "system.hpp"
 
 #include <VkBootstrap.h>
+#include <imgui.h>
+#include <imgui_impl_sdl3.h>
+#include <imgui_impl_vulkan.h>
+
 namespace val {
 void Engine::initVulkan() {
     vkb::InstanceBuilder builder;
@@ -38,7 +42,7 @@ void Engine::initVulkan() {
     vk::PhysicalDeviceFeatures features10{};
     features10.multiDrawIndirect = true;
     features10.tessellationShader = true;
-    
+
     vkb::PhysicalDeviceSelector selector{vkb_inst};
     vkb::PhysicalDevice physicalDevice =
         selector.set_minimum_version(1, 3)
@@ -154,6 +158,7 @@ Engine::Engine(const EngineInitConfig& initConfig,
     initVulkan();
     reloadSwapchain();
     initFrameData();
+    if (initConfig.useImGUI) initImgui();
     bindings.init(device, physicalDeviceProperties);
 }
 
@@ -195,6 +200,13 @@ void Engine::submitFrame(Texture* backbuffer) {
     auto cmd = CommandBuffer(*this, *frame.commandBuffer);
     auto image = swapchain.images[imageIndex];
     if (backbuffer != nullptr) {
+        Texture* fb[1] = {backbuffer};
+        cmd.beginPass(std::span(std::span(fb)));
+
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(),
+                                        *frame.commandBuffer);
+        cmd.endPass();
+
         cmd.transitionImage(backbuffer->image, vk::RemainingMipLevels,
                             vk::ImageLayout::eUndefined,
                             vk::ImageLayout::eTransferSrcOptimal);
@@ -345,15 +357,16 @@ CPUBuffer* Engine::createCpuBuffer(size_t size) {
     return buffer;
 }
 
-StorageBuffer* Engine::createStorageBuffer(uint32_t size, vk::BufferUsageFlagBits usage) {
+StorageBuffer* Engine::createStorageBuffer(uint32_t size,
+                                           vk::BufferUsageFlagBits usage) {
     VkBufferCreateInfo bufferInfo = {.sType =
                                          VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
     bufferInfo.pNext = nullptr;
     bufferInfo.size = size;
 
-    bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                       VK_BUFFER_USAGE_TRANSFER_SRC_BIT | (VkBufferUsageFlagBits)usage;
+    bufferInfo.usage =
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | (VkBufferUsageFlagBits)usage;
 
     VmaAllocationCreateInfo vmaallocInfo = {};
     vmaallocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
@@ -395,5 +408,50 @@ Mesh* Engine::createMesh(size_t verticesSize, uint32_t indicesCount) {
     mesh->indices = raii::Buffer(vma, bufferInfo, vmaallocInfo);
 
     return mesh;
+}
+
+void Engine::initImgui() {
+    vk::DescriptorPoolSize pool_sizes[] = {
+        {vk::DescriptorType::eSampler, 1000},
+        {vk::DescriptorType::eCombinedImageSampler, 1000},
+        {vk::DescriptorType::eSampledImage, 1000},
+        {vk::DescriptorType::eStorageImage, 1000},
+        {vk::DescriptorType::eUniformTexelBuffer, 1000},
+        {vk::DescriptorType::eStorageTexelBuffer, 1000},
+        {vk::DescriptorType::eUniformBuffer, 1000},
+        {vk::DescriptorType::eStorageBuffer, 1000},
+        {vk::DescriptorType::eUniformBufferDynamic, 1000},
+        {vk::DescriptorType::eStorageBufferDynamic, 1000},
+        {vk::DescriptorType::eInputAttachment, 1000}};
+    vk::DescriptorPoolCreateInfo poolCreate;
+    poolCreate.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
+    poolCreate.maxSets = 1000;
+    poolCreate.poolSizeCount = std::size(pool_sizes);
+    poolCreate.pPoolSizes = pool_sizes;
+
+    imguiDescriptorPool = device.createDescriptorPool(poolCreate);
+
+    ImGui::CreateContext();
+    presentation->initImgui();
+
+    VkFormat format = (VkFormat)TextureFormat::RGBA16;
+    ImGui_ImplVulkan_InitInfo init_info = {};
+    init_info.Instance = *instance;
+    init_info.PhysicalDevice = *chosenGPU;
+    init_info.Device = *device;
+    init_info.Queue = graphicsQueue;
+    init_info.DescriptorPool = *imguiDescriptorPool;
+    init_info.MinImageCount = FRAMES_IN_FLIGHT;
+    init_info.ImageCount = FRAMES_IN_FLIGHT;
+    init_info.UseDynamicRendering = true;
+
+    init_info.PipelineRenderingCreateInfo.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+    init_info.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
+    init_info.PipelineRenderingCreateInfo.pColorAttachmentFormats = &format;
+
+    init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+
+    ImGui_ImplVulkan_Init(&init_info);
 }
 }  // namespace val

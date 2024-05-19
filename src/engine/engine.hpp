@@ -1,9 +1,10 @@
 #pragma once
-#include "SDL3/SDL.h"
 #include <cstdint>
+#include <functional>
 #include <unordered_map>
 
 #include "../val/vulkan_abstraction.hpp"
+#include "SDL3/SDL.h"
 #include "terrain.hpp"
 
 namespace engine {
@@ -32,6 +33,7 @@ class Engine {
    private:
     std::unique_ptr<Window> presentation;
     std::unique_ptr<val::Engine> engine;
+
     std::unique_ptr<val::BufferWriter> writer;
     std::unique_ptr<TerrainRenderer> terrainRenderer;
 
@@ -47,8 +49,16 @@ class Engine {
         bool capture = false;
     } mouseCaputure;
 
+    struct {
+        uint32_t ticks{};
+        float deltaTime{};
+    } time{};
+    std::function<void(Engine&)> guiCallback;
+    void drawGUI();
+
    public:
-    Engine(const RendererConfig& config);
+    Engine(const RendererConfig& config,
+           std::function<void(Engine&)> guiCallback = nullptr);
     ~Engine();
 
     KeyState getKeyState(SDL_Scancode key) {
@@ -63,6 +73,8 @@ class Engine {
     bool isKeyPressed(SDL_Scancode key) {
         return getKeyState(key) == KeyState::PRESSED;
     }
+
+    float getDeltaTime() { return time.deltaTime; }
 
     void captureMouse() { mouseCaputure.capture = true; }
     void stopCaptureMouse() { mouseCaputure.capture = false; }

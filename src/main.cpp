@@ -1,24 +1,31 @@
-#include "engine/engine.hpp"
 #include <iostream>
+
+#include "engine/engine.hpp"
+
+void drawGUI(engine::Engine& engine) {
+    auto isTrue = true;
+    ImGui::SetNextWindowPos(ImVec2(16, 16));
+    ImGui::Begin(
+        "vkRaster", &isTrue,
+        ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration);
+
+    ImGui::Text("FPS: %f\n", 1.f / engine.getDeltaTime());
+
+    ImGui::End();
+}
+
 int main() {
-    engine::Engine engine({1920, 1080});
+    engine::Engine engine({1920, 1080}, drawGUI);
     engine::Camera cam;
     cam.position.y = 120;
     cam.dir = {0, 0, 1};
     float moveSpeed = 100.f;
     float sen = 20.f;
     bool capture = false;
-    auto ticks = SDL_GetTicks();
     while (!engine.shouldClose()) {
         engine.updateInput();
 
-        auto deltaTime = (SDL_GetTicks() - ticks) / 1000.f;
-
-        std::cout << "FPS: " << 1 / deltaTime << std::endl;
-
-        ticks = SDL_GetTicks();
-
-
+        auto deltaTime = engine.getDeltaTime();
 
         if (engine.isKeyPressed(SDL_SCANCODE_ESCAPE)) {
             capture ? engine.captureMouse() : engine.stopCaptureMouse();

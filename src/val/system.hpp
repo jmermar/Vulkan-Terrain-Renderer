@@ -1,4 +1,8 @@
 #pragma once
+
+#include <imgui.h>
+#include <imgui_impl_vulkan.h>
+
 #include <cassert>
 
 #include "../foundation/memory.hpp"
@@ -14,6 +18,7 @@ class PresentationProvider {
    public:
     virtual VkSurfaceKHR getSurface(VkInstance ins) = 0;
     virtual Size getSize() = 0;
+    virtual void initImgui() {}
 };
 
 class Engine {
@@ -76,6 +81,8 @@ class Engine {
     vk::raii::PhysicalDevice chosenGPU{nullptr};
     vk::raii::SurfaceKHR surface{nullptr};
 
+    vk::raii::DescriptorPool imguiDescriptorPool{NULL};
+
     raii::VMA vma;
 
     vk::Queue graphicsQueue;
@@ -104,10 +111,17 @@ class Engine {
 
     void regenerate();
 
+    void initImgui();
+
    public:
     Engine() = default;
     Engine(const EngineInitConfig& initConfig,
            Ref<PresentationProvider> presentation);
+    ~Engine() {
+        if (initConfig.useImGUI) {
+            ImGui_ImplVulkan_Shutdown();
+        }
+    }
 
     void update();
 
@@ -119,7 +133,9 @@ class Engine {
                            TextureSampler sampling = TextureSampler::NEAREST,
                            uint32_t mipLevels = 1, VkImageUsageFlags usage = 0);
     CPUBuffer* createCpuBuffer(size_t size);
-    StorageBuffer* createStorageBuffer(uint32_t size, vk::BufferUsageFlagBits usage = vk::BufferUsageFlagBits(0));
+    StorageBuffer* createStorageBuffer(
+        uint32_t size,
+        vk::BufferUsageFlagBits usage = vk::BufferUsageFlagBits(0));
 
     Mesh* createMesh(size_t verticesSize, uint32_t indicesCount);
 
