@@ -70,7 +70,7 @@ Engine::Engine(const RendererConfig& config, std::function<void(Engine&)> cb) {
     presentation = std::make_unique<Window>(winSize, "Vulkan Terrain");
     val::EngineInitConfig initConfig;
     initConfig.appName = "Vulkan Terrain";
-    initConfig.presentation = val::PresentationFormat::Mailbox;
+    initConfig.presentation = val::PresentationFormat::Immediate;
     initConfig.useImGUI = true;
     initConfig.screenSize = {.w = 1920, .h = 1080};
 
@@ -145,6 +145,22 @@ void Engine::render(Camera& camera) {
     cd.dir = camera.dir;
     cd.proj = camera.getProjection();
     cd.view = camera.getView();
+
+    auto m = glm::transpose(cd.proj * cd.view);
+
+    cd.frustum.right = m[3] - m[0];
+    cd.frustum.left = m[3] + m[0];
+    cd.frustum.top = m[3] - m[1];
+    cd.frustum.bottom = m[3] + m[1];
+    cd.frustum.front = m[3] + m[2];
+    cd.frustum.back = m[3] - m[2];
+
+    cd.frustum.right /= glm::length(glm::vec3(cd.frustum.right));
+    cd.frustum.left /= glm::length(glm::vec3(cd.frustum.left));
+    cd.frustum.top /= glm::length(glm::vec3(cd.frustum.top));
+    cd.frustum.bottom /= glm::length(glm::vec3(cd.frustum.bottom));
+    cd.frustum.front /= glm::length(glm::vec3(cd.frustum.front));
+    cd.frustum.back /= glm::length(glm::vec3(cd.frustum.back));
 
     if (cmd.isValid()) {
         writer->updateWrites(cmd);

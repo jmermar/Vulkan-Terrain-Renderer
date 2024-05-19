@@ -2,7 +2,7 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_EXT_nonuniform_qualifier : require
 
-#define PATCH_SIZE 16
+#define PATCH_SIZE 32
 #define MAX_PATCH 200
 #define NUM_PATCHES (MAX_PATCH * MAX_PATCH)
 
@@ -20,10 +20,26 @@ layout(binding = 1) buffer GlobalData {
 } draw[];
 
 layout(push_constant) uniform PushConstants {
+    vec4 planes[6];
     vec3 camPos;
     uint patchesBind;
     uint drawBind;
 };
+
+bool isVisible(vec4 min) {
+    for(int i = 0; i < 6; i++) {
+        vec4 plane = planes[i];
+        vec4 extents = vec4(PATCH_SIZE, 200, PATCH_SIZE, 0);
+        vec4 center  = min + extents * 0.5;
+        center.w = 1;
+
+        float d= extents.x * abs(plane.x) +
+            extents.y * abs(plane.y) + extents.z * abs(plane.z);
+        
+        if (dot(plane, center) < -d) return false;
+    }
+    return true;
+}
 
 void main() {
     if (gl_LocalInvocationID.x == 0) {
@@ -41,6 +57,9 @@ void main() {
         topLeft.w = 1;
         topLeft += vec4(floor(camPos.x / PATCH_SIZE), 0, floor(camPos.z / PATCH_SIZE), 0) * PATCH_SIZE;
 
+        if (!isVisible(topLeft)) {
+            return;
+        }
         uint fv = atomicAdd(draw[drawBind].vertexCount, 4);
         
         vertices[patchesBind].vertices[fv] = topLeft;

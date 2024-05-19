@@ -26,7 +26,7 @@ void main() {
     float len11 = length(view11.xyz);
 
     const float MIN_DISTANCE = 5;
-    const float MAX_DISTANCE = 1000;
+    const float MAX_DISTANCE = 2000;
 
     float dis00 = clamp((len00 - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0, 1);
     float dis01 = clamp((len01 - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0, 1);
@@ -34,7 +34,7 @@ void main() {
     float dis11 = clamp((len11 - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0, 1);
 
     const int MIN_TESS_LEVEL = 1;
-    const int MAX_TESS_LEVEL = 1;
+    const int MAX_TESS_LEVEL = 128;
 
     float level0 = mix(MAX_TESS_LEVEL, MIN_TESS_LEVEL, min(dis10, dis00));
     float level1 = mix(MAX_TESS_LEVEL, MIN_TESS_LEVEL, min(dis00, dis01));
