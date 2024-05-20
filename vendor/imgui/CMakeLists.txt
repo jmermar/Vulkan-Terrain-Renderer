@@ -6,13 +6,14 @@ file(GLOB_RECURSE SRC
 
 
 add_library(imgui STATIC)
-target_include_directories(imgui PUBLIC include )
-
 find_package(Vulkan REQUIRED)
 
-target_sources(imgui PRIVATE ${SRC} PRIVATE)
 
-target_link_libraries(imgui PRIVATE
+target_include_directories(imgui PUBLIC include ${Vulkan_INCLUDE_DIRS})
+
+target_link_libraries(imgui PUBLIC
     ${Vulkan_LIBRARIES}
     SDL3::SDL3
 )
+
+target_sources(imgui PRIVATE ${SRC})
