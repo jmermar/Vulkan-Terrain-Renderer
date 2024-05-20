@@ -57,6 +57,7 @@ class Engine {
     void drawGUI();
 
    public:
+    RenderState state;
     Engine(const RendererConfig& config,
            std::function<void(Engine&)> guiCallback = nullptr);
     ~Engine();

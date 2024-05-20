@@ -2,7 +2,7 @@
 
 layout(quads, equal_spacing, ccw) in;
 
-layout (location = 0) out vec3 outColor;
+layout (location = 0) out vec3 normal;
 layout (location = 1) out vec2 uv;
 layout (location = 2) out vec4 worldPos;
 
@@ -10,7 +10,6 @@ layout(push_constant) uniform constants {
   mat4 proj;
   mat4 view;
   mat4 model;
-  uint grassBind;
 };
 
 vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
@@ -54,7 +53,7 @@ float getHeight(vec2 v) {
     amplitude /= 2;
   }
   
-  return noiseAcc / ampAcc;
+  return (noiseAcc / ampAcc) * 90;
 }
 
 void main() {
@@ -72,9 +71,16 @@ void main() {
 
 
   worldPos.y = getHeight(vec2(worldPos.x, worldPos.z));
-	outColor = vec3(clamp(worldPos.y, 0.3, 1));
-	worldPos.y *= 90;
+
+  vec3 right= vec3(worldPos.x + 0.05, 0, worldPos.z);
+  right.y = getHeight(vec2(right.x, right.z));
+  vec3 down = vec3(worldPos.x, 0, worldPos.z + 0.05);
+  down.y = getHeight(vec2(down.x, down.z));
+
+  normal = cross(normalize(right- worldPos.xyz), normalize(down - worldPos.xyz));
+
 	uv.x = worldPos.x / 8;
 	uv.y = worldPos.z / 8;
+
 	gl_Position = proj * view * worldPos;
 }

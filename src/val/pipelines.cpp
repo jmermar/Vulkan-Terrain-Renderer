@@ -6,8 +6,6 @@ PipelineBuilder::PipelineBuilder(Engine& engine) : engine(engine) {
     renderInfo.depthAttachmentFormat = vk::Format(TextureFormat::DEPTH32);
     pushConstant.stageFlags = vk::ShaderStageFlagBits::eAll;
 
-    
-
     dynamicState.dynamicStateCount = 2;
     dynamicState.pDynamicStates = dynamicStates;
 
@@ -22,6 +20,7 @@ PipelineBuilder& PipelineBuilder::addStage(const std::span<uint8_t> shaderData,
     vk::ShaderModuleCreateInfo moduleCreate;
     moduleCreate.pCode = (uint32_t*)shaderData.data();
     moduleCreate.codeSize = shaderData.size();
+    rasterizer.lineWidth = 1.f;
 
     modules.push_back(engine.device.createShaderModule(moduleCreate));
 
@@ -165,9 +164,9 @@ GraphicsPipeline PipelineBuilder::build() {
     layoutInfo.setLayoutCount = 1;
     return GraphicsPipeline(engine.device, createInfo, layoutInfo);
 }
-ComputePipelineBuilder & ComputePipelineBuilder::setShader(const std::span<uint8_t> shaderData)
-{
-vk::ShaderModuleCreateInfo moduleCreate;
+ComputePipelineBuilder& ComputePipelineBuilder::setShader(
+    const std::span<uint8_t> shaderData) {
+    vk::ShaderModuleCreateInfo moduleCreate;
     moduleCreate.pCode = (uint32_t*)shaderData.data();
     moduleCreate.codeSize = shaderData.size();
 
@@ -187,7 +186,7 @@ ComputePipeline ComputePipelineBuilder::build() {
     auto descLayout = engine.bindings.getLayout();
     layoutInfo.pSetLayouts = &descLayout;
     layoutInfo.setLayoutCount = 1;
-    
+
     vk::ComputePipelineCreateInfo computeCreateInfo;
     computeCreateInfo.stage = stage;
 

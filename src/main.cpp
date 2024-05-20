@@ -4,12 +4,16 @@
 
 void drawGUI(engine::Engine& engine) {
     auto isTrue = true;
+    static auto frustum = false;
     ImGui::SetNextWindowPos(ImVec2(16, 16));
     ImGui::Begin(
         "vkRaster", &isTrue,
         ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration);
 
     ImGui::Text("FPS: %f\n", 1.f / engine.getDeltaTime());
+
+    ImGui::Checkbox("Frustum culling", &frustum);
+    engine.state.frustum = frustum;
 
     ImGui::End();
 }

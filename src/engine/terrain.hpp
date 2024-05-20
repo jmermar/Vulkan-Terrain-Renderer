@@ -26,6 +26,6 @@ class TerrainRenderer {
     TerrainRenderer(val::Engine& engine, val::BufferWriter& writer);
 
     void renderPass(val::Texture* depth, val::Texture* framebuffer,
-                    const CameraData& cam, val::CommandBuffer& cmd);
+                    const RenderState& rs, val::CommandBuffer& cmd);
 };
 }  // namespace engine

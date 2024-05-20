@@ -24,6 +24,7 @@ layout(push_constant) uniform PushConstants {
     vec3 camPos;
     uint patchesBind;
     uint drawBind;
+    bool frustum;
 };
 
 bool isVisible(vec4 min) {
@@ -57,7 +58,7 @@ void main() {
         topLeft.w = 1;
         topLeft += vec4(floor(camPos.x / PATCH_SIZE), 0, floor(camPos.z / PATCH_SIZE), 0) * PATCH_SIZE;
 
-        if (!isVisible(topLeft)) {
+        if (frustum && !isVisible(topLeft)) {
             return;
         }
         uint fv = atomicAdd(draw[drawBind].vertexCount, 4);

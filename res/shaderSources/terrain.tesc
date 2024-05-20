@@ -34,7 +34,7 @@ void main() {
     float dis11 = clamp((len11 - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0, 1);
 
     const int MIN_TESS_LEVEL = 1;
-    const int MAX_TESS_LEVEL = 128;
+    const int MAX_TESS_LEVEL = 64;
 
     float level0 = mix(MAX_TESS_LEVEL, MIN_TESS_LEVEL, min(dis10, dis00));
     float level1 = mix(MAX_TESS_LEVEL, MIN_TESS_LEVEL, min(dis00, dis01));
