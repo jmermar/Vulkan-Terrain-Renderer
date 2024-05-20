@@ -15,4 +15,9 @@ struct CameraData {
     glm::vec3 up;
     Frustum frustum;
 };
+
+struct RenderState {
+    CameraData cam;
+    bool frustum;
+};
 }  // namespace engine

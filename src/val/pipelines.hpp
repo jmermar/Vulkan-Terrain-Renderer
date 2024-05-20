@@ -35,8 +35,8 @@ class ComputePipeline {
     vk::raii::Pipeline pipeline{nullptr};
 
     ComputePipeline(vk::raii::Device& device,
-                     const vk::ComputePipelineCreateInfo& pipelineInfo,
-                     const vk::PipelineLayoutCreateInfo& layoutInfo) {
+                    const vk::ComputePipelineCreateInfo& pipelineInfo,
+                    const vk::PipelineLayoutCreateInfo& layoutInfo) {
         layout = device.createPipelineLayout(layoutInfo);
         auto pci = pipelineInfo;
         pci.layout = *layout;
@@ -48,15 +48,15 @@ class ComputePipeline {
 };
 
 class ComputePipelineBuilder {
-    private:
+   private:
     Engine& engine;
     vk::PushConstantRange pushConstant;
 
     vk::PipelineShaderStageCreateInfo stage;
     vk::raii::ShaderModule shaderModule{nullptr};
 
-public:
-ComputePipelineBuilder(Engine& engine) : engine(engine) {}
+   public:
+    ComputePipelineBuilder(Engine& engine) : engine(engine) {}
     ComputePipelineBuilder& setShader(const std::span<uint8_t> shaderData);
     template <typename T>
     ComputePipelineBuilder& setPushConstant() {
@@ -130,8 +130,8 @@ class PipelineBuilder {
     PipelineBuilder& drawLines();
 
     PipelineBuilder& setCullMode(PolygonCullMode mode) {
-        rasterizer.polygonMode = vk::PolygonMode(mode);
-        rasterizer.lineWidth = 1.f;
+        rasterizer.cullMode = vk::CullModeFlagBits(mode);
+        rasterizer.frontFace = vk::FrontFace::eCounterClockwise;
         return *this;
     }
 

@@ -3,7 +3,7 @@
 
 layout(location = 0) out vec4 outColor;
 
-layout(location = 0) in vec3 color;
+layout(location = 0) in vec3 normal;
 layout(location = 1) in vec2 uv;
 layout(Location = 2) in vec4 worldPos;
 
@@ -57,18 +57,18 @@ vec4 getTextColor() {
   float H = worldPos.y;
   vec4 grass = texture(textures[grassBind], uv);
   vec4 snow = texture(textures[snowBind], uv);
-  vec4 rock1 = texture(textures[rock1Bind], uv * 4);
+  vec4 rock1 = texture(textures[rock1Bind], uv * 2);
   vec4 rock2 = texture(textures[rock2Bind], uv);
 
   return mix(grass,
     mix(rock2,
       mix(rock1, snow, contribution(H, 60, 70)),
-      contribution(H, 42, 55)),
-    contribution(H, 35, 38));
+      contribution(H, 35, 42)),
+    contribution(H, 27, 30));
 
 }
 
 
 void main() {
-  outColor = getTextColor();
+  outColor = getTextColor() * clamp(dot(normal, normalize(vec3(1, -1, 1))), 0.2, 1);
 }

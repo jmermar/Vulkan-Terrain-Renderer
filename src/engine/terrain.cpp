@@ -25,6 +25,7 @@ struct TerrainComputePushConstants {
     glm::vec3 camPos;
     val::BindPoint<val::StorageBuffer> patchesBind;
     val::BindPoint<val::StorageBuffer> drawIndirectBind;
+    bool frustumEnabled;
 };
 
 struct TerrainChunk {
@@ -77,7 +78,7 @@ void TerrainRenderer::initRenderPass() {
                          val::ShaderStage::TESSELATION_EVALUATION)
                .addStage(std::span(tescShader),
                          val::ShaderStage::TESSELATION_CONTROL)
-               .setCullMode(val::PolygonCullMode::NONE)
+               .setCullMode(val::PolygonCullMode::CW)
                .setTessellation(4)
                .depthTestReadWrite()
                .tessellationFill()
@@ -107,15 +108,16 @@ TerrainRenderer::TerrainRenderer(val::Engine& engine, val::BufferWriter& writer)
 }
 
 void TerrainRenderer::renderPass(val::Texture* depth, val::Texture* framebuffer,
-                                 const CameraData& cam,
+                                 const RenderState& rs,
                                  val::CommandBuffer& cmd) {
     cmd.bindPipeline(patchGenerator);
 
     TerrainComputePushConstants computePushConstants;
     computePushConstants.drawIndirectBind = drawIndirectCommand->bindPoint;
     computePushConstants.patchesBind = vertexOutput->bindPoint;
-    computePushConstants.camPos = cam.pos;
-    computePushConstants.frustum = cam.frustum;
+    computePushConstants.camPos = rs.cam.pos;
+    computePushConstants.frustum = rs.cam.frustum;
+    computePushConstants.frustumEnabled = rs.frustum;
 
     cmd.pushConstants(patchGenerator, computePushConstants);
 
@@ -131,8 +133,8 @@ void TerrainRenderer::renderPass(val::Texture* depth, val::Texture* framebuffer,
 
     cmd.beginPass(std::span(&framebuffer, 1), depth, true);
     TerrainPushConstants pc;
-    pc.proj = cam.proj;
-    pc.view = cam.view;
+    pc.proj = rs.cam.proj;
+    pc.view = rs.cam.view;
     pc.textures[0] = textures.grass->bindPoint;
     pc.textures[1] = textures.snow->bindPoint;
     pc.textures[2] = textures.rock1->bindPoint;

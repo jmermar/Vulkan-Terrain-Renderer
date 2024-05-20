@@ -127,6 +127,7 @@ void Engine::updateInput() {
                 keyStates.erase(key);
                 break;
         }
+        ImGui_ImplSDL3_ProcessEvent(&event);
     }
 }
 
@@ -139,7 +140,7 @@ void Engine::render(Camera& camera) {
 
     auto cmd = engine->initFrame();
 
-    CameraData cd;
+    CameraData& cd = state.cam;
     cd.pos = camera.position;
     cd.up = glm::vec3(0, 1, 0);
     cd.dir = camera.dir;
@@ -171,7 +172,7 @@ void Engine::render(Camera& camera) {
         cmd.transitionTexture(frameBuffer, vk::ImageLayout::eTransferDstOptimal,
                               vk::ImageLayout::eColorAttachmentOptimal);
 
-        terrainRenderer->renderPass(depthBuffer, frameBuffer, cd, cmd);
+        terrainRenderer->renderPass(depthBuffer, frameBuffer, state, cmd);
 
         drawGUI();
 
