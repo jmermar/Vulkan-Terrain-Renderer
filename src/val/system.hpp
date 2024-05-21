@@ -123,6 +123,14 @@ class Engine {
         }
     }
 
+    vk::Sampler getSampler(TextureSampler sampler) {
+        if (sampler == TextureSampler::LINEAR) {
+            return *bindings.linearSampler;
+        } else {
+            return *bindings.nearestSampler;
+        }
+    }
+
     void update();
 
     CommandBuffer initFrame();

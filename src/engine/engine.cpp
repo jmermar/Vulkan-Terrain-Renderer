@@ -187,6 +187,18 @@ void Engine::render(Camera& camera) {
         cmd.transitionTexture(frameBuffer, vk::ImageLayout::eTransferDstOptimal,
                               vk::ImageLayout::eColorAttachmentOptimal);
 
+        terrainRenderer->renderComputePass(state, cmd);
+        cmd.memoryBarrier(
+            vk::PipelineStageFlagBits2::eComputeShader,
+            vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
+            vk::PipelineStageFlagBits2::eAllCommands,
+            vk::AccessFlagBits2::eMemoryRead);
+        terrainRenderer->renderDepthPrepass(depthBuffer, state, cmd);
+        cmd.memoryBarrier(
+            vk::PipelineStageFlagBits2::eEarlyFragmentTests,
+            vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
+            vk::PipelineStageFlagBits2::eEarlyFragmentTests,
+            vk::AccessFlagBits2::eMemoryRead);
         terrainRenderer->renderPass(depthBuffer, frameBuffer, state, cmd);
 
         drawGUI();

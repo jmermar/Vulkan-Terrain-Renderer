@@ -79,6 +79,21 @@ void TerrainRenderer::initRenderPass() {
                          val::ShaderStage::TESSELATION_CONTROL)
                .setCullMode(val::PolygonCullMode::CW)
                .setTessellation(4)
+               .depthTestRead()
+               .tessellationFill()
+               .setVertexStride(sizeof(TerrainVertexData))
+               .build();
+
+    val::PipelineBuilder prepassBuild(engine);
+    depthPrepass = prepassBuild.setPushConstant<TerrainPushConstants>()
+               .addVertexInputAttribute(0, val::VertexInputFormat::FLOAT4)
+               .addStage(std::span(vertShader), val::ShaderStage::VERTEX)
+               .addStage(std::span(teseShader),
+                         val::ShaderStage::TESSELATION_EVALUATION)
+               .addStage(std::span(tescShader),
+                         val::ShaderStage::TESSELATION_CONTROL)
+               .setCullMode(val::PolygonCullMode::CW)
+               .setTessellation(4)
                .depthTestReadWrite()
                .tessellationFill()
                .setVertexStride(sizeof(TerrainVertexData))
@@ -106,9 +121,8 @@ TerrainRenderer::TerrainRenderer(val::Engine& engine, val::BufferWriter& writer)
     initCompute();
 }
 
-void TerrainRenderer::renderPass(val::Texture* depth, val::Texture* framebuffer,
-                                 const RenderState& rs,
-                                 val::CommandBuffer& cmd) {
+void TerrainRenderer::renderComputePass(const RenderState & rs, val::CommandBuffer & cmd)
+{
     cmd.bindPipeline(patchGenerator);
 
     TerrainComputePushConstants computePushConstants;
@@ -122,14 +136,35 @@ void TerrainRenderer::renderPass(val::Texture* depth, val::Texture* framebuffer,
     auto cmdb = cmd.cmd;
 
     cmdb.dispatch(NUM_PATCHES / INVOCATION_SIZE, 1, 1);
+}
 
-    cmd.memoryBarrier(
-        vk::PipelineStageFlagBits2::eComputeShader,
-        vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
-        vk::PipelineStageFlagBits2::eAllCommands,
-        vk::AccessFlagBits2::eMemoryRead);
+void TerrainRenderer::renderDepthPrepass(val::Texture * depth, const RenderState & rs, val::CommandBuffer & cmd)
+{
+    auto cmdb = cmd.cmd;
 
-    cmd.beginPass(std::span(&framebuffer, 1), depth, true);
+    cmd.beginPass(std::span<val::Texture*>(), depth, true);
+    TerrainPushConstants pc;
+    pc.globalDataBind = rs.globalData;
+    pc.textures[0] = textures.grass->bindPoint;
+    pc.textures[1] = textures.snow->bindPoint;
+    pc.textures[2] = textures.rock1->bindPoint;
+    pc.textures[3] = textures.rock2->bindPoint;
+    cmd.bindPipeline(depthPrepass);
+    cmd.pushConstants(pass, pc);
+    cmd.setViewport({0, 0, depth->size.w, depth->size.h});
+    cmd.bindVertexBuffer(vertexOutput);
+    cmdb.drawIndirect(drawIndirectCommand->buffer, 0, 1,
+                      sizeof(DrawIndirectCommand));
+
+    cmd.endPass();
+}
+
+void TerrainRenderer::renderPass(val::Texture* depth, val::Texture* framebuffer,
+                                 const RenderState& rs,
+                                 val::CommandBuffer& cmd) {
+    auto cmdb = cmd.cmd;
+
+    cmd.beginPass(std::span(&framebuffer, 1), depth);
     TerrainPushConstants pc;
     pc.globalDataBind = rs.globalData;
     pc.textures[0] = textures.grass->bindPoint;

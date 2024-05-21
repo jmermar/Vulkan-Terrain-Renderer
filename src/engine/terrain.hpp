@@ -7,6 +7,7 @@ class TerrainRenderer {
     val::Engine& engine;
     val::BufferWriter& writer;
     val::GraphicsPipeline pass{};
+    val::GraphicsPipeline depthPrepass{};
     val::ComputePipeline patchGenerator{};
     val::StorageBuffer* vertexOutput;
     val::StorageBuffer* drawIndirectCommand;
@@ -24,6 +25,11 @@ class TerrainRenderer {
 
    public:
     TerrainRenderer(val::Engine& engine, val::BufferWriter& writer);
+
+    void renderComputePass(const RenderState& rs, val::CommandBuffer& cmd);
+
+    void renderDepthPrepass(val::Texture* depth,
+                    const RenderState& rs, val::CommandBuffer& cmd);
 
     void renderPass(val::Texture* depth, val::Texture* framebuffer,
                     const RenderState& rs, val::CommandBuffer& cmd);

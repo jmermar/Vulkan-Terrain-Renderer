@@ -80,13 +80,15 @@ void CommandBuffer::memoryBarrier(vk::PipelineStageFlags2 srcStage,
 void CommandBuffer::copyTextureToTexture(Texture* src, Texture* dst) {
     vk::ImageBlit2 region;
     region.srcSubresource.layerCount = 1;
-    region.srcSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+    region.srcSubresource.aspectMask = src->format != TextureFormat::DEPTH32 ? 
+        vk::ImageAspectFlagBits::eColor : vk::ImageAspectFlagBits::eDepth;
     region.srcOffsets[0] = {.x = 0, .y = 0, .z = 0};
     region.srcOffsets[1] = {
         .x = (int32_t)src->size.w, .y = (int32_t)src->size.h, .z = (int32_t)1};
 
     region.dstSubresource.layerCount = 1;
-    region.dstSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+    region.dstSubresource.aspectMask = dst->format != TextureFormat::DEPTH32 ? 
+        vk::ImageAspectFlagBits::eColor : vk::ImageAspectFlagBits::eDepth;
     region.dstOffsets[0] = {.x = 0, .y = 0, .z = 0};
     region.dstOffsets[1] = {
         .x = (int32_t)dst->size.w, .y = (int32_t)dst->size.h, .z = (int32_t)1};
@@ -226,6 +228,7 @@ void CommandBuffer::beginPass(std::span<Texture*> framebuffers,
     renderInfo.layerCount = 1;
 
     if (depthBuffer) {
+        area = depthBuffer->size;
         depthInfo.imageView = *depthBuffer->imageView;
         depthInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
         depthInfo.loadOp = clearDepth ? vk::AttachmentLoadOp::eClear
