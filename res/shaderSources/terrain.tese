@@ -1,15 +1,23 @@
 #version 450
+#extension GL_EXT_nonuniform_qualifier : require
+#include "globalData.h"
 
 layout(quads, equal_spacing, ccw) in;
 
 layout (location = 0) out vec3 normal;
 layout (location = 1) out vec2 uv;
 layout (location = 2) out vec4 worldPos;
+layout (location = 3) out float visibility;
+
+const float density = 0.00035;
+const float gradient = 4.5;
 
 layout(push_constant) uniform constants {
-  mat4 proj;
-  mat4 view;
-  mat4 model;
+  uint globalDataBinding;
+  uint grassBind;
+  uint snowBind;
+  uint rock1Bind;
+  uint rock2Bind;
 };
 
 vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
@@ -82,5 +90,8 @@ void main() {
 	uv.x = worldPos.x / 8;
 	uv.y = worldPos.z / 8;
 
-	gl_Position = proj * view * worldPos;
+  float disToCamera = length(global.camPos - worldPos.xyz);
+  visibility = exp(-pow((disToCamera*global.fogDensity), global.fogGradient));
+
+	gl_Position = global.proj * global.view * worldPos;
 }

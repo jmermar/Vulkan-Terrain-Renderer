@@ -42,6 +42,8 @@ class Engine {
     val::Texture* frameBuffer;
     val::Texture* depthBuffer;
 
+    val::StorageBuffer* globalData;
+
     bool _shouldClose = false;
 
     struct {

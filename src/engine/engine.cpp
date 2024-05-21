@@ -85,6 +85,8 @@ Engine::Engine(const RendererConfig& config, std::function<void(Engine&)> cb) {
     engine->createMesh(4, 1);
 
     time.ticks = SDL_GetTicks();
+
+    globalData = engine->createStorageBuffer(sizeof(GlobalData));
 }
 
 Engine::~Engine() { engine->waitFinishAllCommands(); }
@@ -163,12 +165,25 @@ void Engine::render(Camera& camera) {
     cd.frustum.front /= glm::length(glm::vec3(cd.frustum.front));
     cd.frustum.back /= glm::length(glm::vec3(cd.frustum.back));
 
+    GlobalData gd;
+    gd.fogDensity =  0.00035;
+    gd.fogGradient = 2.5;
+    gd.frustum = cd.frustum;
+    gd.proj = cd.proj;
+    gd.view = cd.view;
+    gd.projView = cd.proj * cd.view;
+    gd.skyColor = glm::vec4(0.2, 0.4, 0.8, 1);
+    gd.camPos = cd.pos;
+    state.globalData = globalData->bindPoint;
+
+    writer->enqueueBufferWrite(globalData, &gd, 0, sizeof(GlobalData));
+
     if (cmd.isValid()) {
         writer->updateWrites(cmd);
 
         cmd.transitionTexture(frameBuffer, vk::ImageLayout::eUndefined,
                               vk::ImageLayout::eTransferDstOptimal);
-        cmd.clearImage(frameBuffer->image, 0.2, 0.4, 0.8, 1);
+        cmd.clearImage(frameBuffer->image, gd.skyColor.r, gd.skyColor.g, gd.skyColor.b, gd.skyColor.a);
         cmd.transitionTexture(frameBuffer, vk::ImageLayout::eTransferDstOptimal,
                               vk::ImageLayout::eColorAttachmentOptimal);
 

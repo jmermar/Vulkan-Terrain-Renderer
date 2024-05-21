@@ -1,24 +1,20 @@
 #version 450
-
+#extension GL_EXT_nonuniform_qualifier : require
 layout (vertices = 4) out;
 
+#include "globalData.h"
+
 layout(push_constant) uniform constants {
-  mat4 proj;
-  mat4 view;
-  mat4 model;
-  uint grassBind;
-  uint snowBind;
-  uint rock1Bind;
-  uint rock2Bind;
+  uint globalDataBinding;
 };
 
 void main() {
     gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
 
-    vec4 view00 = view * gl_in[0].gl_Position;
-    vec4 view01 = view * gl_in[1].gl_Position;
-    vec4 view10 = view * gl_in[2].gl_Position;
-    vec4 view11 = view * gl_in[3].gl_Position;
+    vec4 view00 = global.view * gl_in[0].gl_Position;
+    vec4 view01 = global.view * gl_in[1].gl_Position;
+    vec4 view10 = global.view * gl_in[2].gl_Position;
+    vec4 view11 = global.view * gl_in[3].gl_Position;
 
     float len00 = length(view00.xyz);
     float len01 = length(view01.xyz);
@@ -33,8 +29,8 @@ void main() {
     float dis10 = clamp((len10 - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0, 1);
     float dis11 = clamp((len11 - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0, 1);
 
-    const int MIN_TESS_LEVEL = 1;
-    const int MAX_TESS_LEVEL = 64;
+    const int MIN_TESS_LEVEL = 4;
+    const int MAX_TESS_LEVEL = 128;
 
     float level0 = mix(MAX_TESS_LEVEL, MIN_TESS_LEVEL, min(dis10, dis00));
     float level1 = mix(MAX_TESS_LEVEL, MIN_TESS_LEVEL, min(dis00, dis01));

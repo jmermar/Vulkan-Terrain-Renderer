@@ -19,5 +19,18 @@ struct CameraData {
 struct RenderState {
     CameraData cam;
     bool frustum;
+    val::BindPoint<val::StorageBuffer> globalData;
+};
+
+struct GlobalData {
+    glm::mat4 proj;
+    glm::mat4 view;
+    glm::mat4 projView;
+    glm::vec3 camPos;
+    float pad;
+    Frustum frustum;
+    glm::vec4 skyColor;
+    float fogDensity;
+    float fogGradient;
 };
 }  // namespace engine

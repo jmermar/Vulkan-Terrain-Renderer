@@ -9,7 +9,7 @@ struct TerrainVertexData {
 };
 
 struct TerrainPushConstants {
-    glm::mat4 proj, view, model;
+    val::BindPoint<val::StorageBuffer> globalDataBind;
     val::BindPoint<val::Texture> textures[4];
 };
 
@@ -21,8 +21,7 @@ struct DrawIndirectCommand {
 };
 
 struct TerrainComputePushConstants {
-    Frustum frustum;
-    glm::vec3 camPos;
+    val::BindPoint<val::StorageBuffer> globalDataBind;
     val::BindPoint<val::StorageBuffer> patchesBind;
     val::BindPoint<val::StorageBuffer> drawIndirectBind;
     bool frustumEnabled;
@@ -115,8 +114,7 @@ void TerrainRenderer::renderPass(val::Texture* depth, val::Texture* framebuffer,
     TerrainComputePushConstants computePushConstants;
     computePushConstants.drawIndirectBind = drawIndirectCommand->bindPoint;
     computePushConstants.patchesBind = vertexOutput->bindPoint;
-    computePushConstants.camPos = rs.cam.pos;
-    computePushConstants.frustum = rs.cam.frustum;
+    computePushConstants.globalDataBind = rs.globalData;
     computePushConstants.frustumEnabled = rs.frustum;
 
     cmd.pushConstants(patchGenerator, computePushConstants);
@@ -133,8 +131,7 @@ void TerrainRenderer::renderPass(val::Texture* depth, val::Texture* framebuffer,
 
     cmd.beginPass(std::span(&framebuffer, 1), depth, true);
     TerrainPushConstants pc;
-    pc.proj = rs.cam.proj;
-    pc.view = rs.cam.view;
+    pc.globalDataBind = rs.globalData;
     pc.textures[0] = textures.grass->bindPoint;
     pc.textures[1] = textures.snow->bindPoint;
     pc.textures[2] = textures.rock1->bindPoint;
