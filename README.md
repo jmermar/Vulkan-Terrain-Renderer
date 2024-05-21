@@ -19,4 +19,4 @@ cmake .. &
 make
 ```
 
-For windows, you can open it with visual studio as a CMake Project.
+For windows, you can open it with Visual Studio as a CMake Project.
