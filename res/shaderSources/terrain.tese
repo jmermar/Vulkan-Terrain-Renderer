@@ -54,11 +54,11 @@ float getHeight(vec2 v) {
   float amplitude = 1;
   float ampAcc = 0;  
   float noiseAcc = 0;
-  for(int i = 0; i < 4; i++) {
+  for(int i = 0; i < 6; i++) {
     noiseAcc += (snoise(v * f) * 0.5 + 0.5) * amplitude;
     ampAcc += amplitude;
     f *= 2.5;
-    amplitude /= 2;
+    amplitude /= 2.5;
   }
   
   return (noiseAcc / ampAcc) * 90;
