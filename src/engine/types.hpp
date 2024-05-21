@@ -20,6 +20,9 @@ struct RenderState {
     CameraData cam;
     bool frustum;
     val::BindPoint<val::StorageBuffer> globalData;
+    glm::vec4 skyColor = glm::vec4(0, 0, 1, 1);
+    float fogDensity = 2.5;
+    float fogGradient = 0.0004;
 };
 
 struct GlobalData {

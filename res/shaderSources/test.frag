@@ -1,5 +1,6 @@
 #version 450
 #extension GL_EXT_nonuniform_qualifier : require
+#include "globalData.h"
 
 layout(location = 0) out vec4 outColor;
 
@@ -39,5 +40,5 @@ vec4 getTextColor() {
 
 
 void main() {
-  outColor = mix(vec4(0.2,0.4,0.8,1), getTextColor() * clamp(dot(normal, normalize(vec3(1, -1, 1))), 0.2, 1), visibility);
+  outColor = mix(global.skyColor, getTextColor() * clamp(dot(normal, normalize(vec3(1, -1, 1))), 0.2, 1), visibility);
 }

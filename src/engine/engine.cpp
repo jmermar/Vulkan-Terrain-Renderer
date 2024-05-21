@@ -166,13 +166,13 @@ void Engine::render(Camera& camera) {
     cd.frustum.back /= glm::length(glm::vec3(cd.frustum.back));
 
     GlobalData gd;
-    gd.fogDensity =  0.00035;
-    gd.fogGradient = 2.5;
+    gd.fogDensity =  state.fogGradient;
+    gd.fogGradient = state.fogDensity;
     gd.frustum = cd.frustum;
     gd.proj = cd.proj;
     gd.view = cd.view;
     gd.projView = cd.proj * cd.view;
-    gd.skyColor = glm::vec4(0.2, 0.4, 0.8, 1);
+    gd.skyColor = state.skyColor;
     gd.camPos = cd.pos;
     state.globalData = globalData->bindPoint;
 

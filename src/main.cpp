@@ -1,5 +1,5 @@
 #include <iostream>
-
+#include <glm/gtc/type_ptr.hpp>
 #include "engine/engine.hpp"
 
 void drawGUI(engine::Engine& engine) {
@@ -14,6 +14,11 @@ void drawGUI(engine::Engine& engine) {
 
     ImGui::Checkbox("Frustum culling", &frustum);
     engine.state.frustum = frustum;
+
+    ImGui::InputFloat("fog density", &engine.state.fogDensity);
+    ImGui::InputFloat("fog gradient", &engine.state.fogGradient);
+
+    ImGui::ColorPicker4("sky Color", glm::value_ptr(engine.state.skyColor));
 
     ImGui::End();
 }

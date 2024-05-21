@@ -24,7 +24,7 @@ struct TerrainComputePushConstants {
     val::BindPoint<val::StorageBuffer> globalDataBind;
     val::BindPoint<val::StorageBuffer> patchesBind;
     val::BindPoint<val::StorageBuffer> drawIndirectBind;
-    bool frustumEnabled;
+    uint32_t frustumEnabled;
 };
 
 struct TerrainChunk {
