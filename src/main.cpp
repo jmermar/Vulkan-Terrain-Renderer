@@ -1,6 +1,8 @@
-#include <iostream>
 #include <glm/gtc/type_ptr.hpp>
+#include <iostream>
+
 #include "engine/engine.hpp"
+
 
 void drawGUI(engine::Engine& engine) {
     auto isTrue = true;

@@ -3,41 +3,52 @@
 #extension GL_EXT_nonuniform_qualifier : require
 
 #include "GlobalData.h"
+#include "bindUtils.h"
 
 #define PATCH_SIZE 64
 #define MAX_PATCH 128
 #define NUM_PATCHES (MAX_PATCH * MAX_PATCH)
+#define WATER_LEVEL 20
 
-layout(local_size_x = 256, local_size_y =1, local_size_z = 1) in;
+layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
-layout(binding = 1) buffer Patches {
-    vec4 vertices[];
-} vertices[];
+SSB(terrainVertices, { vec4 vertices[]; });
 
-layout(binding = 1) buffer DrawCommand {
+SSB(terrainDraw, {
     uint vertexCount;
     uint instanceCount;
     uint firstVertex;
     uint firstInstance;
-} draw[];
+});
+
+SSB(waterVertices, { vec4 vertices[]; });
+
+SSB(waterDraw, {
+    uint vertexCount;
+    uint instanceCount;
+    uint firstVertex;
+    uint firstInstance;
+});
 
 layout(push_constant) uniform PushConstants {
     uint globalDataBinding;
-    uint patchesBind;
-    uint drawBind;
+    uint terrainVerticesBind;
+    uint terrainDrawBind;
+    uint waterVerticesBind;
+    uint waterDrawBind;
     uint frustum;
 };
 
 bool isVisible(vec4 min) {
-    for(int i = 0; i < 6; i++) {
+    for (int i = 0; i < 6; i++) {
         vec4 plane = global.frustum[i];
         vec4 extents = vec4(PATCH_SIZE, 200, PATCH_SIZE, 0);
-        vec4 center  = min + extents * 0.5;
+        vec4 center = min + extents * 0.5;
         center.w = 1;
 
-        float d= extents.x * abs(plane.x) +
-            extents.y * abs(plane.y) + extents.z * abs(plane.z);
-        
+        float d = extents.x * abs(plane.x) + extents.y * abs(plane.y) +
+                  extents.z * abs(plane.z);
+
         if (dot(plane, center) < -d) return false;
     }
     return true;
@@ -45,28 +56,55 @@ bool isVisible(vec4 min) {
 
 void main() {
     if (gl_LocalInvocationID.x == 0) {
-        draw[drawBind].vertexCount = 0;
-        draw[drawBind].instanceCount = 1;
-        draw[drawBind].firstInstance = 0;
-        draw[drawBind].firstVertex = 0;
+        GET(terrainDraw).vertexCount = 0;
+        GET(terrainDraw).instanceCount = 1;
+        GET(terrainDraw).firstInstance = 0;
+        GET(terrainDraw).firstVertex = 0;
+
+        GET(waterDraw).vertexCount = 0;
+        GET(waterDraw).instanceCount = 1;
+        GET(waterDraw).firstInstance = 0;
+        GET(waterDraw).firstVertex = 0;
     }
     barrier();
 
     if (gl_GlobalInvocationID.x < NUM_PATCHES) {
         uint px = gl_GlobalInvocationID.x % MAX_PATCH;
         uint pz = gl_GlobalInvocationID.x / MAX_PATCH;
-        vec4 topLeft = (vec4(MAX_PATCH * 0.5, 0, MAX_PATCH * 0.5, 0) - vec4(px, 0, pz, 0)) * PATCH_SIZE;
+        vec4 topLeft = (vec4(MAX_PATCH * 0.5, 0, MAX_PATCH * 0.5, 0) -
+                        vec4(px, 0, pz, 0)) *
+                       PATCH_SIZE;
         topLeft.w = 1;
-        topLeft += vec4(floor(global.camPos.x / PATCH_SIZE), 0, floor(global.camPos.z / PATCH_SIZE), 0) * PATCH_SIZE;
+        topLeft += vec4(floor(global.camPos.x / PATCH_SIZE), 0,
+                        floor(global.camPos.z / PATCH_SIZE), 0) *
+                   PATCH_SIZE;
 
         if (frustum > 0 && !isVisible(topLeft)) {
             return;
         }
-        uint fv = atomicAdd(draw[drawBind].vertexCount, 4);
-        
-        vertices[patchesBind].vertices[fv] = topLeft;
-        vertices[patchesBind].vertices[fv + 1] = topLeft + vec4(PATCH_SIZE, 0, 0, 0);
-        vertices[patchesBind].vertices[fv + 2] = topLeft + vec4(0, 0, PATCH_SIZE, 0);
-        vertices[patchesBind].vertices[fv + 3] = topLeft + vec4(PATCH_SIZE, 0, PATCH_SIZE, 0);
+        uint idx = atomicAdd(GET(terrainDraw).vertexCount, 4);
+        uint idxW = atomicAdd(GET(waterDraw).vertexCount, 6);
+
+        GET(terrainVertices).vertices[idx] = topLeft;
+        GET(terrainVertices).vertices[idx + 1] =
+            topLeft + vec4(PATCH_SIZE, 0, 0, 0);
+        GET(terrainVertices).vertices[idx + 2] =
+            topLeft + vec4(0, 0, PATCH_SIZE, 0);
+        GET(terrainVertices).vertices[idx + 3] =
+            topLeft + vec4(PATCH_SIZE, 0, PATCH_SIZE, 0);
+
+        topLeft.y = WATER_LEVEL;
+
+        GET(waterVertices).vertices[idxW] = topLeft;
+        GET(waterVertices).vertices[idxW + 1] =
+            topLeft + vec4(PATCH_SIZE, 0, PATCH_SIZE, 0);
+        GET(waterVertices).vertices[idxW + 2] =
+            topLeft + vec4(PATCH_SIZE, 0, 0, 0);
+
+        GET(waterVertices).vertices[idxW + 3] = topLeft;
+        GET(waterVertices).vertices[idxW + 4] =
+            topLeft + vec4(0, 0, PATCH_SIZE, 0);
+        GET(waterVertices).vertices[idxW + 5] =
+            topLeft + vec4(PATCH_SIZE, 0, PATCH_SIZE, 0);
     }
 }

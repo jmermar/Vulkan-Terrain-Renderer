@@ -59,7 +59,7 @@ glm::mat4 Camera::getView() {
 }
 
 glm::mat4 Camera::getProjection() {
-    auto ret = glm::perspective(glm::radians(fov), w / h, 0.1f, 100000.f);
+    auto ret = glm::perspective(glm::radians(fov), w / h, 0.1f, 3000.f);
     ret[1][1] *= -1;
     return ret;
 }
@@ -77,11 +77,16 @@ Engine::Engine(const RendererConfig& config, std::function<void(Engine&)> cb) {
     engine = std::make_unique<val::Engine>(initConfig, presentation.get());
     writer = std::make_unique<val::BufferWriter>(*engine);
     terrainRenderer = std::make_unique<TerrainRenderer>(*engine, *writer);
+    waterRenderer = std::make_unique<WaterRenderer>(*engine, *writer);
 
     frameBuffer =
         engine->createTexture({1920, 1080}, val::TextureFormat::RGBA16);
     depthBuffer =
         engine->createTexture({1920, 1080}, val::TextureFormat::DEPTH32);
+
+    screenTexture = engine->createTexture(
+        {1920, 1080}, val::TextureFormat::RGBA16, val::TextureSampler::LINEAR);
+
     engine->createMesh(4, 1);
 
     time.ticks = SDL_GetTicks();
@@ -166,12 +171,13 @@ void Engine::render(Camera& camera) {
     cd.frustum.back /= glm::length(glm::vec3(cd.frustum.back));
 
     GlobalData gd;
-    gd.fogDensity =  state.fogGradient;
+    gd.fogDensity = state.fogGradient;
     gd.fogGradient = state.fogDensity;
     gd.frustum = cd.frustum;
     gd.proj = cd.proj;
     gd.view = cd.view;
     gd.projView = cd.proj * cd.view;
+    gd.invP = glm::inverse(cd.proj);
     gd.skyColor = state.skyColor;
     gd.camPos = cd.pos;
     state.globalData = globalData->bindPoint;
@@ -183,23 +189,52 @@ void Engine::render(Camera& camera) {
 
         cmd.transitionTexture(frameBuffer, vk::ImageLayout::eUndefined,
                               vk::ImageLayout::eTransferDstOptimal);
-        cmd.clearImage(frameBuffer->image, gd.skyColor.r, gd.skyColor.g, gd.skyColor.b, gd.skyColor.a);
+        cmd.clearImage(frameBuffer->image, gd.skyColor.r, gd.skyColor.g,
+                       gd.skyColor.b, gd.skyColor.a);
         cmd.transitionTexture(frameBuffer, vk::ImageLayout::eTransferDstOptimal,
                               vk::ImageLayout::eColorAttachmentOptimal);
 
-        terrainRenderer->renderComputePass(state, cmd);
-        cmd.memoryBarrier(
-            vk::PipelineStageFlagBits2::eComputeShader,
-            vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
-            vk::PipelineStageFlagBits2::eAllCommands,
-            vk::AccessFlagBits2::eMemoryRead);
+        terrainRenderer->renderComputePass(state, cmd, waterRenderer->vertices,
+                                           waterRenderer->drawCommand);
+        cmd.memoryBarrier(vk::PipelineStageFlagBits2::eComputeShader,
+                          vk::AccessFlagBits2::eMemoryRead |
+                              vk::AccessFlagBits2::eMemoryWrite,
+                          vk::PipelineStageFlagBits2::eAllCommands,
+                          vk::AccessFlagBits2::eMemoryRead);
         terrainRenderer->renderDepthPrepass(depthBuffer, state, cmd);
-        cmd.memoryBarrier(
-            vk::PipelineStageFlagBits2::eEarlyFragmentTests,
-            vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
-            vk::PipelineStageFlagBits2::eEarlyFragmentTests,
-            vk::AccessFlagBits2::eMemoryRead);
+        cmd.memoryBarrier(vk::PipelineStageFlagBits2::eLateFragmentTests,
+                          vk::AccessFlagBits2::eMemoryRead |
+                              vk::AccessFlagBits2::eMemoryWrite,
+                          vk::PipelineStageFlagBits2::eEarlyFragmentTests,
+                          vk::AccessFlagBits2::eMemoryRead);
         terrainRenderer->renderPass(depthBuffer, frameBuffer, state, cmd);
+
+        // Copy fb to screen texture
+
+        cmd.transitionTexture(frameBuffer,
+                              vk::ImageLayout::eColorAttachmentOptimal,
+                              vk::PipelineStageFlagBits2::eLateFragmentTests,
+                              vk::ImageLayout::eTransferSrcOptimal,
+                              vk::PipelineStageFlagBits2::eTransfer);
+        cmd.transitionTexture(screenTexture, vk::ImageLayout::eUndefined,
+                              vk::PipelineStageFlagBits2::eLateFragmentTests,
+                              vk::ImageLayout::eTransferDstOptimal,
+                              vk::PipelineStageFlagBits2::eTransfer);
+
+        cmd.copyTextureToTexture(frameBuffer, screenTexture);
+
+        cmd.transitionTexture(frameBuffer, vk::ImageLayout::eTransferSrcOptimal,
+                              vk::PipelineStageFlagBits2::eTransfer,
+                              vk::ImageLayout::eColorAttachmentOptimal,
+                              vk::PipelineStageFlagBits2::eEarlyFragmentTests);
+        cmd.transitionTexture(screenTexture,
+                              vk::ImageLayout::eTransferDstOptimal,
+                              vk::PipelineStageFlagBits2::eTransfer,
+                              vk::ImageLayout::eShaderReadOnlyOptimal,
+                              vk::PipelineStageFlagBits2::eEarlyFragmentTests);
+
+        waterRenderer->renderPass(depthBuffer, frameBuffer, screenTexture,
+                                  state, cmd);
 
         drawGUI();
 

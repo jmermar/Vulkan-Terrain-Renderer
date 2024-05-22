@@ -6,6 +6,7 @@
 #include "../val/vulkan_abstraction.hpp"
 #include "SDL3/SDL.h"
 #include "terrain.hpp"
+#include "water.hpp"
 
 namespace engine {
 
@@ -36,11 +37,13 @@ class Engine {
 
     std::unique_ptr<val::BufferWriter> writer;
     std::unique_ptr<TerrainRenderer> terrainRenderer;
+    std::unique_ptr<WaterRenderer> waterRenderer;
 
     std::unordered_map<SDL_Scancode, KeyState> keyStates;
 
     val::Texture* frameBuffer;
     val::Texture* depthBuffer;
+    val::Texture* screenTexture;
 
     val::StorageBuffer* globalData;
 

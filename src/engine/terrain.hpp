@@ -26,10 +26,12 @@ class TerrainRenderer {
    public:
     TerrainRenderer(val::Engine& engine, val::BufferWriter& writer);
 
-    void renderComputePass(const RenderState& rs, val::CommandBuffer& cmd);
+    void renderComputePass(const RenderState& rs, val::CommandBuffer& cmd,
+                           val::StorageBuffer* waterVertices,
+                           val::StorageBuffer* waterDraw);
 
-    void renderDepthPrepass(val::Texture* depth,
-                    const RenderState& rs, val::CommandBuffer& cmd);
+    void renderDepthPrepass(val::Texture* depth, const RenderState& rs,
+                            val::CommandBuffer& cmd);
 
     void renderPass(val::Texture* depth, val::Texture* framebuffer,
                     const RenderState& rs, val::CommandBuffer& cmd);

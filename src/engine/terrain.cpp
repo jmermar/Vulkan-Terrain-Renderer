@@ -24,6 +24,8 @@ struct TerrainComputePushConstants {
     val::BindPoint<val::StorageBuffer> globalDataBind;
     val::BindPoint<val::StorageBuffer> patchesBind;
     val::BindPoint<val::StorageBuffer> drawIndirectBind;
+    val::BindPoint<val::StorageBuffer> waterVerticesBind;
+    val::BindPoint<val::StorageBuffer> waterDrawIndirectBind;
     uint32_t frustumEnabled;
 };
 
@@ -85,19 +87,20 @@ void TerrainRenderer::initRenderPass() {
                .build();
 
     val::PipelineBuilder prepassBuild(engine);
-    depthPrepass = prepassBuild.setPushConstant<TerrainPushConstants>()
-               .addVertexInputAttribute(0, val::VertexInputFormat::FLOAT4)
-               .addStage(std::span(vertShader), val::ShaderStage::VERTEX)
-               .addStage(std::span(teseShader),
-                         val::ShaderStage::TESSELATION_EVALUATION)
-               .addStage(std::span(tescShader),
-                         val::ShaderStage::TESSELATION_CONTROL)
-               .setCullMode(val::PolygonCullMode::CW)
-               .setTessellation(4)
-               .depthTestReadWrite()
-               .tessellationFill()
-               .setVertexStride(sizeof(TerrainVertexData))
-               .build();
+    depthPrepass =
+        prepassBuild.setPushConstant<TerrainPushConstants>()
+            .addVertexInputAttribute(0, val::VertexInputFormat::FLOAT4)
+            .addStage(std::span(vertShader), val::ShaderStage::VERTEX)
+            .addStage(std::span(teseShader),
+                      val::ShaderStage::TESSELATION_EVALUATION)
+            .addStage(std::span(tescShader),
+                      val::ShaderStage::TESSELATION_CONTROL)
+            .setCullMode(val::PolygonCullMode::CW)
+            .setTessellation(4)
+            .depthTestReadWrite()
+            .tessellationFill()
+            .setVertexStride(sizeof(TerrainVertexData))
+            .build();
 }
 void TerrainRenderer::initCompute() {
     auto compShader = file::readBinary("shaders/patchGenerator.comp.spv");
@@ -121,8 +124,10 @@ TerrainRenderer::TerrainRenderer(val::Engine& engine, val::BufferWriter& writer)
     initCompute();
 }
 
-void TerrainRenderer::renderComputePass(const RenderState & rs, val::CommandBuffer & cmd)
-{
+void TerrainRenderer::renderComputePass(const RenderState& rs,
+                                        val::CommandBuffer& cmd,
+                                        val::StorageBuffer* waterVertices,
+                                        val::StorageBuffer* waterDraw) {
     cmd.bindPipeline(patchGenerator);
 
     TerrainComputePushConstants computePushConstants;
@@ -130,6 +135,8 @@ void TerrainRenderer::renderComputePass(const RenderState & rs, val::CommandBuff
     computePushConstants.patchesBind = vertexOutput->bindPoint;
     computePushConstants.globalDataBind = rs.globalData;
     computePushConstants.frustumEnabled = rs.frustum;
+    computePushConstants.waterDrawIndirectBind = waterDraw->bindPoint;
+    computePushConstants.waterVerticesBind = waterVertices->bindPoint;
 
     cmd.pushConstants(patchGenerator, computePushConstants);
 
@@ -138,8 +145,9 @@ void TerrainRenderer::renderComputePass(const RenderState & rs, val::CommandBuff
     cmdb.dispatch(NUM_PATCHES / INVOCATION_SIZE, 1, 1);
 }
 
-void TerrainRenderer::renderDepthPrepass(val::Texture * depth, const RenderState & rs, val::CommandBuffer & cmd)
-{
+void TerrainRenderer::renderDepthPrepass(val::Texture* depth,
+                                         const RenderState& rs,
+                                         val::CommandBuffer& cmd) {
     auto cmdb = cmd.cmd;
 
     cmd.beginPass(std::span<val::Texture*>(), depth, true);
