@@ -31,6 +31,7 @@ struct GlobalData {
     glm::mat4 view;
     glm::mat4 projView;
     glm::mat4 invP;
+    glm::mat4 invView;
     glm::vec3 camPos;
     float pad;
     Frustum frustum;

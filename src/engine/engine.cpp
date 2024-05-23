@@ -304,6 +304,7 @@ void Engine::render(Camera& camera) {
     gd.view = cd.view;
     gd.projView = cd.proj * cd.view;
     gd.invP = glm::inverse(cd.proj);
+    gd.invView = glm::inverse(cd.view);
     gd.skyColor = state.skyColor;
     gd.camPos = cd.pos;
     gd.time = time.time;

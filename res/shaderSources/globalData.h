@@ -3,6 +3,7 @@ layout(binding = 1) buffer GlobalData {
     mat4 view;
     mat4 projView;
     mat4 invP;
+    mat4 invView;
     vec3 camPos;
     vec4 frustum[6];
     vec4 skyColor;

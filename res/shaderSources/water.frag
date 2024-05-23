@@ -19,9 +19,9 @@ layout(push_constant) uniform constants {
     uint skybox;
 };
 
-const float stepF = 0.5;
+const float stepF = 2;
 const float minRayStep = 0.1;
-const int maxSteps = 60;
+const int maxSteps = 20;
 const float searchDist = 5;
 const int numBinarySearchSteps = 5;
 const float biased = 0.005;
@@ -55,7 +55,7 @@ vec4 getSSRColor(vec3 dir, vec4 defColor) {
            defColor * (1 - useTex);
 }
 
-vec4 getSSRColor(vec3 dir, vec3 worldDir) {
+vec4 getSSRColor(vec3 dir) {
     vec3 hitPos = viewPos;
     float dDepth;
     vec4 coords = vec4(rayCast(hitPos, dir), 0, 0);
@@ -70,10 +70,15 @@ vec4 getSSRColor(vec3 dir, vec3 worldDir) {
 
     coords += vec4(dudvOff, 0, 0);
 
+    vec4 infCoords = global.proj * vec4(viewPos + dir * 1000, 1);
+    infCoords += vec4(dudvOff, 0, 0) * infCoords.w;
+
+    vec4 wCoords = global.invView * global.invP * infCoords;
+
     float useTex = step(0, coords.x) * step(-1, -coords.x) * step(0, coords.y) *
                    step(-1, -coords.y);
 
-    vec4 defColor = texture(arrayTextures[skybox], worldDir);
+    vec4 defColor = texture(arrayTextures[skybox], wCoords.xyz);
 
     return texture(textures[screenTexture], coords.xy) * useTex +
            defColor * (1 - useTex);
@@ -90,7 +95,7 @@ void main() {
 
     float refractFactor = abs(dot(normalize(viewPos), normalize(normal)));
 
-    outColor = getSSRColor(reflected, worldRef) * (1 - refractFactor) +
+    outColor = getSSRColor(reflected) * (1 - refractFactor) +
                getSSRColor(refracted, vec4(0)) * refractFactor;
 }
 
@@ -150,7 +155,6 @@ vec2 rayCast(vec3 position, vec3 reflection) {
             return screenPosition.xy;
         }
     }
-
     screenPosition = generateProjectedPosition(marchingPosition);
     return vec2(-1);
 }
