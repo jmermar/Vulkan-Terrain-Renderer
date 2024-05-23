@@ -4,6 +4,12 @@
 
 WIP procedural terrain renderer that uses tessellation for dynamic LOD and simplex noise for terrain generation.
 
+# SSR Water
+
+![](screenshots/water.gif)
+
+Currently I'm working in a water shader which uses Screen Space Reflection for shading, it also uses a refraction/reflection ratio loosely based on fresnel effect. One thing I would like to improve is to make this shader PBR once I research more on the topic.
+
 # Build
 
 The project uses CMake and have been built both on linux (Ubuntu) and Windows 10.
