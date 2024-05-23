@@ -8,6 +8,7 @@ layout(binding = 1) buffer GlobalData {
     vec4 skyColor;
     float fogDensity;
     float fogGradient;
+    float time;
 } globalData[];
 
 #define global (globalData[globalDataBinding])

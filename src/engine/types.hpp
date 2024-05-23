@@ -36,5 +36,6 @@ struct GlobalData {
     glm::vec4 skyColor;
     float fogDensity;
     float fogGradient;
+    float time;
 };
 }  // namespace engine

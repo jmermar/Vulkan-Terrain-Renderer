@@ -17,11 +17,12 @@ layout(push_constant) uniform constants {
     uint dudv;
 };
 
-const float stepF = 4;
+const float stepF = 1;
 const float minRayStep = 0.1;
-const int maxSteps = 15;
+const int maxSteps = 30;
 const float searchDist = 5;
 const int numBinarySearchSteps = 5;
+const float biased = 0.01;
 
 vec2 rayCast(vec3 position, vec3 reflection);
 
@@ -31,9 +32,12 @@ vec4 getSSRColor(vec3 dir, vec4 defColor) {
     vec4 coords = vec4(rayCast(hitPos, dir), 0, 0);
 
     vec2 dudvOff =
-        (texture(textures[dudv], vec2(worldPos.x, worldPos.z) * 0.01).rg * 2 -
+        (texture(textures[dudv],
+                 vec2(global.time) * 0.2 + vec2(worldPos.x, worldPos.z) * 0.1)
+                 .rg *
+             2 -
          1) *
-        0.1;
+        0.01;
 
     coords += vec4(dudvOff, 0, 0);
 
@@ -49,8 +53,12 @@ void main() {
 
     vec3 reflected = normalize(reflect(normalize(viewPos), normalize(normal)));
     vec3 refracted = normalize(viewPos);
-    outColor = getSSRColor(reflected, vec4(global.skyColor)) * 0.4 +
-               getSSRColor(refracted, vec4(0)) * 0.6;
+
+    float refractFactor = abs(dot(normalize(viewPos), normalize(normal)));
+
+    outColor =
+        getSSRColor(reflected, vec4(global.skyColor)) * (1 - refractFactor) +
+        getSSRColor(refracted, vec4(0)) * refractFactor;
 }
 
 vec3 generatePositionFromDepth(vec2 texturePos, float depth) {
@@ -82,7 +90,7 @@ vec2 rayCast(vec3 position, vec3 reflection) {
                     texture(textures[depthTexture], screenPosition).x)
                     .z);
         delta = abs(marchingPosition.z) - depthFromScreen;
-        if (abs(delta) < 0.1) {
+        if (abs(delta) < biased) {
             return screenPosition.xy;
         }
 
@@ -104,7 +112,7 @@ vec2 rayCast(vec3 position, vec3 reflection) {
                     .z);
         delta = abs(marchingPosition.z) - depthFromScreen;
 
-        if (abs(delta) < 0.1) {
+        if (abs(delta) < biased) {
             vec3 color = vec3(1);
             return screenPosition.xy;
         }

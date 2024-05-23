@@ -57,6 +57,7 @@ class Engine {
     struct {
         uint32_t ticks{};
         float deltaTime{};
+        float time{};
     } time{};
     std::function<void(Engine&)> guiCallback;
     void drawGUI();

@@ -143,6 +143,7 @@ bool Engine::shouldClose() { return _shouldClose; }
 void Engine::render(Camera& camera) {
     time.deltaTime = (SDL_GetTicks() - time.ticks) / 1000.f;
     time.ticks = SDL_GetTicks();
+    time.time += time.deltaTime;
     engine->update();
 
     auto cmd = engine->initFrame();
@@ -180,6 +181,7 @@ void Engine::render(Camera& camera) {
     gd.invP = glm::inverse(cd.proj);
     gd.skyColor = state.skyColor;
     gd.camPos = cd.pos;
+    gd.time = time.time;
     state.globalData = globalData->bindPoint;
 
     writer->enqueueBufferWrite(globalData, &gd, 0, sizeof(GlobalData));
