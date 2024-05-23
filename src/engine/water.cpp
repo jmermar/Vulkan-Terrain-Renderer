@@ -29,7 +29,8 @@ struct WaterPushConstants {
 
 void WaterRenderer::loadTextures() {
     auto dudvImage = file::loadImage("textures/dudv.png");
-    dudvMap = engine.createTexture(dudvImage.size, val::TextureFormat::RGBA8);
+    dudvMap = engine.createTexture(dudvImage.size, val::TextureFormat::RGBA8,
+                                   val::TextureSampler::LINEAR, 8);
     writer.enqueueTextureWrite(dudvMap, dudvImage.data.data());
 }
 

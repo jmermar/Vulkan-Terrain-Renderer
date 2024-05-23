@@ -21,10 +21,13 @@ layout(push_constant) uniform constants {
 
 const float stepF = 2;
 const float minRayStep = 0.1;
-const int maxSteps = 20;
+const int maxSteps = 30;
 const float searchDist = 5;
 const int numBinarySearchSteps = 5;
 const float biased = 0.005;
+
+const float waveStregnth = 0.03;
+const float waveFrequency = 0.1;
 
 const vec3 planes[6] = {
     vec3(0, 1, 0), vec3(0, -1, 0), vec3(0, 0, -1),
@@ -38,13 +41,13 @@ vec4 getSSRColor(vec3 dir, vec4 defColor) {
     float dDepth;
     vec4 coords = vec4(rayCast(hitPos, dir), 0, 0);
 
-    vec2 dudvOff =
-        (texture(textures[dudv],
-                 vec2(global.time) * 0.05 + vec2(worldPos.x, worldPos.z) * 0.1)
-                 .rg *
-             2 -
-         1) *
-        0.01;
+    vec2 dudvOff = (texture(textures[dudv],
+                            vec2(global.time) * 0.05 +
+                                vec2(worldPos.x, worldPos.z) * waveFrequency)
+                            .rg *
+                        2 -
+                    1) *
+                   waveStregnth;
 
     coords += vec4(dudvOff, 0, 0);
 
@@ -60,13 +63,13 @@ vec4 getSSRColor(vec3 dir) {
     float dDepth;
     vec4 coords = vec4(rayCast(hitPos, dir), 0, 0);
 
-    vec2 dudvOff =
-        (texture(textures[dudv],
-                 vec2(global.time) * 0.05 + vec2(worldPos.x, worldPos.z) * 0.1)
-                 .rg *
-             2 -
-         1) *
-        0.01;
+    vec2 dudvOff = (texture(textures[dudv],
+                            vec2(global.time) * 0.05 +
+                                vec2(worldPos.x, worldPos.z) * waveFrequency)
+                            .rg *
+                        2 -
+                    1) *
+                   waveStregnth;
 
     coords += vec4(dudvOff, 0, 0);
 
