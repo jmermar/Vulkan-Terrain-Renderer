@@ -10,6 +10,7 @@
 
 #include "types.hpp"
 namespace engine {
+
 class Window : public val::PresentationProvider {
    private:
     SDL_Window* window{};
@@ -36,6 +37,128 @@ class Window : public val::PresentationProvider {
     }
 
     void initImgui() override { ImGui_ImplSDL3_InitForVulkan(window); }
+};
+
+struct SkyboxPushConstants {
+    glm::mat4 transform;
+    val::BindPoint<val::StorageBuffer> globalDataBind;
+    val::BindPoint<val::Texture> skyboxTexture;
+};
+
+struct SkyboxVertexData {
+    glm::vec3 pos;
+    glm::vec3 coords;
+};
+
+void buildFace(std::span<SkyboxVertexData> vertices,
+               std::span<uint32_t> indices, size_t firstVertex,
+               size_t firstIndex, glm::vec3 topLeft, glm::vec3 right,
+               glm::vec3 down, float tex) {
+    vertices[firstVertex + 0].pos = topLeft;
+    vertices[firstVertex + 1].pos = topLeft + right;
+    vertices[firstVertex + 2].pos = topLeft + right + down;
+    vertices[firstVertex + 3].pos = topLeft + down;
+
+    vertices[firstVertex + 0].coords = {0, 0, tex};
+    vertices[firstVertex + 1].coords = {1, 0, tex};
+    vertices[firstVertex + 2].coords = {1, 1, tex};
+    vertices[firstVertex + 3].coords = {0, 1, tex};
+
+    indices[firstIndex + 0] = firstVertex;
+    indices[firstIndex + 1] = firstVertex + 1;
+    indices[firstIndex + 2] = firstVertex + 2;
+    indices[firstIndex + 3] = firstVertex;
+    indices[firstIndex + 4] = firstVertex + 2;
+    indices[firstIndex + 5] = firstVertex + 3;
+}
+
+class SkyboxRenderer {
+    friend class Engine;
+
+   private:
+    val::Engine& engine;
+    val::BufferWriter& writer;
+    val::Texture* skybox;
+    val::Mesh* mesh;
+    val::GraphicsPipeline pipeline{};
+
+   public:
+    SkyboxRenderer(val::Engine& engine, val::BufferWriter& writer)
+        : engine(engine), writer(writer) {
+        std::string textures[6] = {
+            "textures/skybox/right.bmp", "textures/skybox/left.bmp",
+            "textures/skybox/up.bmp",    "textures/skybox/down.bmp",
+            "textures/skybox/back.bmp",  "textures/skybox/front.bmp"};
+        ImageData skyboxImage = file::loadImageArray(std::span(textures));
+
+        auto vertShader = file::readBinary("shaders/skybox.vert.spv");
+        auto fragShader = file::readBinary("shaders/skybox.frag.spv");
+
+        val::PipelineBuilder builder(engine);
+        pipeline =
+            builder.setPushConstant<SkyboxPushConstants>()
+                .addVertexInputAttribute(0, val::VertexInputFormat::FLOAT3)
+                .addVertexInputAttribute(offsetof(SkyboxVertexData, coords),
+                                         val::VertexInputFormat::FLOAT3)
+                .addColorAttachment(val::TextureFormat::RGBA16)
+                .disableDepthTest()
+                .addStage(std::span(vertShader), val::ShaderStage::VERTEX)
+                .addStage(std::span(fragShader), val::ShaderStage::FRAGMENT)
+                .fillTriangles()
+                .setVertexStride(sizeof(SkyboxVertexData))
+                .build();
+
+        skybox =
+            engine.createTexture(skyboxImage.size, val::TextureFormat::RGBA8,
+                                 val::TextureSampler::LINEAR);
+        writer.enqueueTextureWrite(skybox, skyboxImage.data.data());
+
+        std::vector<SkyboxVertexData> vertices(6 * 4);
+        std::vector<uint32_t> indices(6 * 6);
+
+        // Top
+        buildFace(vertices, indices, 0, 0, {-1, 1, 1}, {2, 0, 0}, {0, 0, -2},
+                  0);
+        // Bottom
+        buildFace(vertices, indices, 4, 6, {-1, -1, -1}, {2, 0, 0}, {0, 0, 2},
+                  1);
+        // Front
+        buildFace(vertices, indices, 8, 12, {1, 1, 1}, {-2, 0, 0}, {0, -2, 0},
+                  2);
+        // Back
+        buildFace(vertices, indices, 12, 18, {-1, 1, -1}, {2, 0, 0}, {0, -2, 0},
+                  3);
+        // Left
+        buildFace(vertices, indices, 16, 24, {-1, 1, 1}, {0, 0, -2}, {0, -2, 0},
+                  4);
+        // Right
+        buildFace(vertices, indices, 20, 30, {1, 1, -1}, {0, 0, 2}, {0, -2, 0},
+                  5);
+
+        mesh = engine.createMesh(vertices.size() * sizeof(SkyboxVertexData),
+                                 indices.size());
+
+        writer.enqueueMeshWrite(mesh, std::span(vertices), std::span(indices));
+    }
+
+    void renderPass(val::Texture* framebuffer, const RenderState& rs,
+                    val::CommandBuffer& cmd) {
+        auto cmdb = cmd.cmd;
+
+        cmd.beginPass(std::span(&framebuffer, 1));
+        SkyboxPushConstants pc;
+        pc.globalDataBind = rs.globalData;
+        pc.skyboxTexture = skybox->bindPoint;
+        pc.transform = glm::translate(glm::mat4(1), rs.cam.pos) *
+                       glm::scale(glm::mat4(1), glm::vec3(500.f));
+        cmd.bindPipeline(pipeline);
+        cmd.pushConstants(pipeline, pc);
+        cmd.setViewport({0, 0, framebuffer->size.w, framebuffer->size.h});
+        cmd.bindMesh(mesh);
+        cmdb.drawIndexed(mesh->indicesCount, 1, 0, 0, 0);
+
+        cmd.endPass();
+    }
 };
 
 void Camera::rotateX(float degrees) {
@@ -78,14 +201,16 @@ Engine::Engine(const RendererConfig& config, std::function<void(Engine&)> cb) {
     writer = std::make_unique<val::BufferWriter>(*engine);
     terrainRenderer = std::make_unique<TerrainRenderer>(*engine, *writer);
     waterRenderer = std::make_unique<WaterRenderer>(*engine, *writer);
+    skyboxRenderer = std::make_unique<SkyboxRenderer>(*engine, *writer);
 
     frameBuffer =
-        engine->createTexture({1920, 1080}, val::TextureFormat::RGBA16);
+        engine->createTexture(Size{1920, 1080}, val::TextureFormat::RGBA16);
     depthBuffer =
-        engine->createTexture({1920, 1080}, val::TextureFormat::DEPTH32);
+        engine->createTexture(Size{1920, 1080}, val::TextureFormat::DEPTH32);
 
-    screenTexture = engine->createTexture(
-        {1920, 1080}, val::TextureFormat::RGBA16, val::TextureSampler::LINEAR);
+    screenTexture =
+        engine->createTexture(Size{1920, 1080}, val::TextureFormat::RGBA16,
+                              val::TextureSampler::LINEAR);
 
     engine->createMesh(4, 1);
 
@@ -183,6 +308,7 @@ void Engine::render(Camera& camera) {
     gd.camPos = cd.pos;
     gd.time = time.time;
     state.globalData = globalData->bindPoint;
+    state.skyboxTexture = skyboxRenderer->skybox->bindPoint;
 
     writer->enqueueBufferWrite(globalData, &gd, 0, sizeof(GlobalData));
 
@@ -195,6 +321,8 @@ void Engine::render(Camera& camera) {
                        gd.skyColor.b, gd.skyColor.a);
         cmd.transitionTexture(frameBuffer, vk::ImageLayout::eTransferDstOptimal,
                               vk::ImageLayout::eColorAttachmentOptimal);
+
+        skyboxRenderer->renderPass(frameBuffer, state, cmd);
 
         terrainRenderer->renderComputePass(state, cmd, waterRenderer->vertices,
                                            waterRenderer->drawCommand);

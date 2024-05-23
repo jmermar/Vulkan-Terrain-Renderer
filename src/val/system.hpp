@@ -137,9 +137,17 @@ class Engine {
 
     void submitFrame(Texture* backbuffer);
 
-    Texture* createTexture(Size size, TextureFormat format,
+    Texture* createTexture(Size3D size, TextureFormat format,
                            TextureSampler sampling = TextureSampler::NEAREST,
                            uint32_t mipLevels = 1, VkImageUsageFlags usage = 0);
+
+    Texture* createTexture(Size size, TextureFormat format,
+                           TextureSampler sampling = TextureSampler::NEAREST,
+                           uint32_t mipLevels = 1,
+                           VkImageUsageFlags usage = 0) {
+        return createTexture(Size3D{size.w, size.h, 1}, format, sampling,
+                             mipLevels, usage);
+    }
     CPUBuffer* createCpuBuffer(size_t size);
     StorageBuffer* createStorageBuffer(
         uint32_t size,

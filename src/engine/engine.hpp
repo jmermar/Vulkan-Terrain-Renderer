@@ -28,6 +28,8 @@ struct Camera {
     glm::mat4 getView();
 };
 
+class SkyboxRenderer;
+
 enum class KeyState { PRESSED, RELEASED, HOLD };
 
 class Engine {
@@ -38,6 +40,7 @@ class Engine {
     std::unique_ptr<val::BufferWriter> writer;
     std::unique_ptr<TerrainRenderer> terrainRenderer;
     std::unique_ptr<WaterRenderer> waterRenderer;
+    std::unique_ptr<SkyboxRenderer> skyboxRenderer;
 
     std::unordered_map<SDL_Scancode, KeyState> keyStates;
 

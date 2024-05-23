@@ -51,7 +51,7 @@ void CommandBuffer::copyToTexture(Texture* t, vk::Buffer origin,
     copyRegion.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
     copyRegion.imageSubresource.mipLevel = 0;
     copyRegion.imageSubresource.baseArrayLayer = 0;
-    copyRegion.imageSubresource.layerCount = 1;
+    copyRegion.imageSubresource.layerCount = t->size.depth;
     copyRegion.imageExtent.width = t->size.w;
     copyRegion.imageExtent.height = t->size.h;
     copyRegion.imageExtent.depth = 1;
@@ -80,15 +80,17 @@ void CommandBuffer::memoryBarrier(vk::PipelineStageFlags2 srcStage,
 void CommandBuffer::copyTextureToTexture(Texture* src, Texture* dst) {
     vk::ImageBlit2 region;
     region.srcSubresource.layerCount = 1;
-    region.srcSubresource.aspectMask = src->format != TextureFormat::DEPTH32 ? 
-        vk::ImageAspectFlagBits::eColor : vk::ImageAspectFlagBits::eDepth;
+    region.srcSubresource.aspectMask = src->format != TextureFormat::DEPTH32
+                                           ? vk::ImageAspectFlagBits::eColor
+                                           : vk::ImageAspectFlagBits::eDepth;
     region.srcOffsets[0] = {.x = 0, .y = 0, .z = 0};
     region.srcOffsets[1] = {
         .x = (int32_t)src->size.w, .y = (int32_t)src->size.h, .z = (int32_t)1};
 
     region.dstSubresource.layerCount = 1;
-    region.dstSubresource.aspectMask = dst->format != TextureFormat::DEPTH32 ? 
-        vk::ImageAspectFlagBits::eColor : vk::ImageAspectFlagBits::eDepth;
+    region.dstSubresource.aspectMask = dst->format != TextureFormat::DEPTH32
+                                           ? vk::ImageAspectFlagBits::eColor
+                                           : vk::ImageAspectFlagBits::eDepth;
     region.dstOffsets[0] = {.x = 0, .y = 0, .z = 0};
     region.dstOffsets[1] = {
         .x = (int32_t)dst->size.w, .y = (int32_t)dst->size.h, .z = (int32_t)1};
@@ -221,14 +223,16 @@ void CommandBuffer::beginPass(std::span<Texture*> framebuffers,
         auto texture = framebuffers[i];
         attachInfo.imageView = *texture->imageView;
         colorAttachments[i] = attachInfo;
-        area = texture->size;
+        area.w = texture->size.w;
+        area.h = texture->size.h;
     }
     renderInfo.colorAttachmentCount = colorAttachments.size();
     renderInfo.pColorAttachments = colorAttachments.data();
     renderInfo.layerCount = 1;
 
     if (depthBuffer) {
-        area = depthBuffer->size;
+        area.w = depthBuffer->size.w;
+        area.h = depthBuffer->size.h;
         depthInfo.imageView = *depthBuffer->imageView;
         depthInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
         depthInfo.loadOp = clearDepth ? vk::AttachmentLoadOp::eClear
@@ -255,8 +259,8 @@ void CommandBuffer::_bindPipeline(GraphicsPipeline& pipeline) {
 void CommandBuffer::_bindPipeline(ComputePipeline& pipeline) {
     cmd.bindPipeline(vk::PipelineBindPoint::eCompute, *pipeline.pipeline);
     auto ds = *engine.bindings.descriptorSet;
-    cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *pipeline.layout,
-                           0, 1, &ds, 0, nullptr);
+    cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *pipeline.layout, 0,
+                           1, &ds, 0, nullptr);
 }
 
 void CommandBuffer::_pushConstants(GraphicsPipeline& pipeline, const void* data,

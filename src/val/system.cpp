@@ -286,7 +286,7 @@ void Engine::submitFrame(Texture* backbuffer) {
     frameCounter++;
 }
 
-Texture* Engine::createTexture(Size size, TextureFormat format,
+Texture* Engine::createTexture(Size3D size, TextureFormat format,
                                TextureSampler sampling, uint32_t mipLevels,
                                VkImageUsageFlags usage) {
     assert(mipLevels > 0 && mipLevels <= 32);
@@ -301,10 +301,13 @@ Texture* Engine::createTexture(Size size, TextureFormat format,
     VkImageCreateInfo imagecreateInfo = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
     imagecreateInfo.format = (VkFormat)format;
-    imagecreateInfo.imageType = VK_IMAGE_TYPE_2D;
+    imagecreateInfo.flags =
+        size.depth > 1 ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
+    imagecreateInfo.imageType =
+        size.depth > 1 ? VK_IMAGE_TYPE_2D : VK_IMAGE_TYPE_2D;
     imagecreateInfo.extent = {.width = size.w, .height = size.h, .depth = 1};
     imagecreateInfo.mipLevels = mipLevels;
-    imagecreateInfo.arrayLayers = 1;
+    imagecreateInfo.arrayLayers = size.depth;
     imagecreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     imagecreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
     imagecreateInfo.usage = usage | VK_IMAGE_USAGE_SAMPLED_BIT |
@@ -320,16 +323,16 @@ Texture* Engine::createTexture(Size size, TextureFormat format,
             VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)};
 
     texture->image.init(vma, imagecreateInfo, vmaAlloc);
-
     vk::ImageViewCreateInfo viewCreateInfo{};
     viewCreateInfo.image = texture->image;
     viewCreateInfo.format = vk::Format(format);
-    viewCreateInfo.subresourceRange.layerCount = 1;
+    viewCreateInfo.subresourceRange.layerCount = size.depth;
     viewCreateInfo.subresourceRange.levelCount = mipLevels;
     viewCreateInfo.subresourceRange.aspectMask =
         (format != TextureFormat::DEPTH32) ? vk::ImageAspectFlagBits::eColor
                                            : vk::ImageAspectFlagBits::eDepth;
-    viewCreateInfo.viewType = vk::ImageViewType::e2D;
+    viewCreateInfo.viewType =
+        size.depth > 1 ? vk::ImageViewType::eCube : vk::ImageViewType::e2D;
     texture->imageView = device.createImageView(viewCreateInfo);
 
     texture->bindPoint = bindings.bindTexture(*texture->imageView, sampling);

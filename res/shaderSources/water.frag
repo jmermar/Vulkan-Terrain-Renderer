@@ -8,6 +8,7 @@ layout(location = 1) in vec3 worldPos;
 layout(location = 0) out vec4 outColor;
 
 layout(binding = 0) uniform sampler2D textures[];
+layout(binding = 0) uniform samplerCube arrayTextures[];
 
 layout(push_constant) uniform constants {
     vec4 color;
@@ -15,14 +16,20 @@ layout(push_constant) uniform constants {
     uint screenTexture;
     uint depthTexture;
     uint dudv;
+    uint skybox;
 };
 
-const float stepF = 1;
+const float stepF = 0.5;
 const float minRayStep = 0.1;
-const int maxSteps = 30;
+const int maxSteps = 60;
 const float searchDist = 5;
 const int numBinarySearchSteps = 5;
-const float biased = 0.01;
+const float biased = 0.005;
+
+const vec3 planes[6] = {
+    vec3(0, 1, 0), vec3(0, -1, 0), vec3(0, 0, -1),
+    vec3(0, 0, 1), vec3(-1, 0, 0), vec3(1, 0, 0),
+};
 
 vec2 rayCast(vec3 position, vec3 reflection);
 
@@ -33,7 +40,7 @@ vec4 getSSRColor(vec3 dir, vec4 defColor) {
 
     vec2 dudvOff =
         (texture(textures[dudv],
-                 vec2(global.time) * 0.2 + vec2(worldPos.x, worldPos.z) * 0.1)
+                 vec2(global.time) * 0.05 + vec2(worldPos.x, worldPos.z) * 0.1)
                  .rg *
              2 -
          1) *
@@ -48,17 +55,49 @@ vec4 getSSRColor(vec3 dir, vec4 defColor) {
            defColor * (1 - useTex);
 }
 
+vec4 getSSRColor(vec3 dir, vec3 worldDir) {
+    vec3 hitPos = viewPos;
+    float dDepth;
+    vec4 coords = vec4(rayCast(hitPos, dir), 0, 0);
+
+    vec2 dudvOff =
+        (texture(textures[dudv],
+                 vec2(global.time) * 0.05 + vec2(worldPos.x, worldPos.z) * 0.1)
+                 .rg *
+             2 -
+         1) *
+        0.01;
+
+    coords += vec4(dudvOff, 0, 0);
+
+    float useTex = step(0, coords.x) * step(-1, -coords.x) * step(0, coords.y) *
+                   step(-1, -coords.y);
+
+    vec4 defColor = texture(arrayTextures[skybox], worldDir);
+
+    return texture(textures[screenTexture], coords.xy) * useTex +
+           defColor * (1 - useTex);
+}
+
 void main() {
     vec3 normal = (global.view * vec4(0, 1, 0, 0)).xyz;
 
     vec3 reflected = normalize(reflect(normalize(viewPos), normalize(normal)));
     vec3 refracted = normalize(viewPos);
 
+    vec3 worldRef =
+        normalize(reflect(normalize(worldPos - global.camPos), vec3(0, 1, 0)));
+
     float refractFactor = abs(dot(normalize(viewPos), normalize(normal)));
 
-    outColor =
-        getSSRColor(reflected, vec4(global.skyColor)) * (1 - refractFactor) +
-        getSSRColor(refracted, vec4(0)) * refractFactor;
+    outColor = getSSRColor(reflected, worldRef) * (1 - refractFactor) +
+               getSSRColor(refracted, vec4(0)) * refractFactor;
+}
+
+vec2 generateProjectedPosition(vec3 pos) {
+    vec4 samplePosition = global.proj * vec4(pos, 1.f);
+    samplePosition.xy = (samplePosition.xy / samplePosition.w) * 0.5 + 0.5;
+    return samplePosition.xy;
 }
 
 vec3 generatePositionFromDepth(vec2 texturePos, float depth) {
@@ -66,12 +105,6 @@ vec3 generatePositionFromDepth(vec2 texturePos, float depth) {
     vec4 inversed = global.invP * ndc;
     inversed /= inversed.w;
     return inversed.xyz;
-}
-
-vec2 generateProjectedPosition(vec3 pos) {
-    vec4 samplePosition = global.proj * vec4(pos, 1.f);
-    samplePosition.xy = (samplePosition.xy / samplePosition.w) * 0.5 + 0.5;
-    return samplePosition.xy;
 }
 
 vec2 rayCast(vec3 position, vec3 reflection) {
@@ -118,5 +151,6 @@ vec2 rayCast(vec3 position, vec3 reflection) {
         }
     }
 
+    screenPosition = generateProjectedPosition(marchingPosition);
     return vec2(-1);
 }

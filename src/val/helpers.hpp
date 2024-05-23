@@ -3,6 +3,6 @@
 
 namespace val {
 namespace helpers {
-size_t getTextureSizeFromSizeAndFormat(const Size s, TextureFormat format);
+size_t getTextureSizeFromSizeAndFormat(const Size3D s, TextureFormat format);
 }  // namespace helpers
 }  // namespace val

@@ -24,6 +24,7 @@ struct WaterPushConstants {
     val::BindPoint<val::Texture> screenTexture;
     val::BindPoint<val::Texture> depthTexture;
     val::BindPoint<val::Texture> dudv;
+    val::BindPoint<val::Texture> skyboxTexture;
 };
 
 void WaterRenderer::loadTextures() {
@@ -73,6 +74,7 @@ void WaterRenderer::renderPass(val::Texture* depth, val::Texture* framebuffer,
     pc.screenTexture = screen->bindPoint;
     pc.depthTexture = depth->bindPoint;
     pc.dudv = dudvMap->bindPoint;
+    pc.skyboxTexture = rs.skyboxTexture;
     cmd.bindPipeline(pass);
     cmd.pushConstants(pass, pc);
     cmd.setViewport({0, 0, framebuffer->size.w, framebuffer->size.h});

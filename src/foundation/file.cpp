@@ -2,6 +2,7 @@
 
 #include <stb_image.h>
 
+#include <cassert>
 #include <cstring>
 #include <fstream>
 
@@ -31,9 +32,34 @@ ImageData loadImage(const std::string& path) {
     ImageData ret;
     ret.size.w = w;
     ret.size.h = h;
+    ret.size.depth = 1;
     ret.data.resize(w * h * 4);
     memcpy(ret.data.data(), img, w * h * 4);
     stbi_image_free(img);
+    return ret;
+}
+ImageData loadImageArray(std::span<std::string> paths) {
+    assert(paths.size() > 0);
+    Size3D dimensions;
+    dimensions.depth = paths.size();
+    std::vector<ImageData> imgs;
+    for (const auto& path : paths) {
+        imgs.push_back(loadImage(path));
+    }
+    dimensions.w = imgs[0].size.w;
+    dimensions.h = imgs[0].size.h;
+
+    ImageData ret;
+    ret.size = dimensions;
+    ret.data.resize(dimensions.w * dimensions.h * dimensions.depth * 4);
+    int i = 0;
+    for (const auto& img : imgs) {
+        assert(img.size.w == dimensions.w && img.size.h == dimensions.h);
+        memcpy(ret.data.data() + i * img.size.w * img.size.h * 4,
+               img.data.data(), img.size.w * img.size.h * 4);
+        i++;
+    }
+
     return ret;
 }
 }  // namespace file

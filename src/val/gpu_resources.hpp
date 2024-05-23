@@ -16,7 +16,7 @@ struct Texture {
     BindPoint<Texture> bindPoint{};
     raii::Image image{};
     vk::raii::ImageView imageView{nullptr};
-    Size size{};
+    Size3D size{};
     TextureFormat format{};
     TextureSampler sampler{};
     uint32_t mipLevels{};
