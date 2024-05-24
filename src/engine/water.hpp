@@ -12,6 +12,7 @@ class WaterRenderer {
     val::StorageBuffer* vertices;
     val::StorageBuffer* drawCommand;
     val::Texture* dudvMap;
+    val::Texture* normals;
 
     void loadTextures();
     void initRenderPass();

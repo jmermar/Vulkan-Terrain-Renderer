@@ -182,7 +182,7 @@ glm::mat4 Camera::getView() {
 }
 
 glm::mat4 Camera::getProjection() {
-    auto ret = glm::perspective(glm::radians(fov), w / h, 0.1f, 3000.f);
+    auto ret = glm::perspective(glm::radians(fov), w / h, 0.01f, 3000.f);
     ret[1][1] *= -1;
     return ret;
 }

@@ -11,6 +11,7 @@ struct TerrainVertexData {
 struct TerrainPushConstants {
     val::BindPoint<val::StorageBuffer> globalDataBind;
     val::BindPoint<val::Texture> textures[4];
+    val::BindPoint<val::Texture> skyBox;
 };
 
 struct DrawIndirectCommand {
@@ -179,6 +180,7 @@ void TerrainRenderer::renderPass(val::Texture* depth, val::Texture* framebuffer,
     pc.textures[1] = textures.snow->bindPoint;
     pc.textures[2] = textures.rock1->bindPoint;
     pc.textures[3] = textures.rock2->bindPoint;
+    pc.skyBox = rs.skyboxTexture;
     cmd.bindPipeline(pass);
     cmd.pushConstants(pass, pc);
     cmd.setViewport({0, 0, framebuffer->size.w, framebuffer->size.h});

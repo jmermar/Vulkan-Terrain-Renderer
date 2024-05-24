@@ -24,6 +24,7 @@ struct WaterPushConstants {
     val::BindPoint<val::Texture> screenTexture;
     val::BindPoint<val::Texture> depthTexture;
     val::BindPoint<val::Texture> dudv;
+    val::BindPoint<val::Texture> normals;
     val::BindPoint<val::Texture> skyboxTexture;
 };
 
@@ -32,6 +33,11 @@ void WaterRenderer::loadTextures() {
     dudvMap = engine.createTexture(dudvImage.size, val::TextureFormat::RGBA8,
                                    val::TextureSampler::LINEAR, 8);
     writer.enqueueTextureWrite(dudvMap, dudvImage.data.data());
+
+    auto normalsImage = file::loadImage("textures/water_normals.png");
+    normals = engine.createTexture(normalsImage.size, val::TextureFormat::RGBA8,
+                                   val::TextureSampler::LINEAR, 8);
+    writer.enqueueTextureWrite(normals, normalsImage.data.data());
 }
 
 void WaterRenderer::initRenderPass() {
@@ -76,6 +82,7 @@ void WaterRenderer::renderPass(val::Texture* depth, val::Texture* framebuffer,
     pc.depthTexture = depth->bindPoint;
     pc.dudv = dudvMap->bindPoint;
     pc.skyboxTexture = rs.skyboxTexture;
+    pc.normals = normals->bindPoint;
     cmd.bindPipeline(pass);
     cmd.pushConstants(pass, pc);
     cmd.setViewport({0, 0, framebuffer->size.w, framebuffer->size.h});

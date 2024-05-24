@@ -16,6 +16,7 @@ layout(push_constant) uniform constants {
     uint screenTexture;
     uint depthTexture;
     uint dudv;
+    uint normals;
     uint skybox;
 };
 
@@ -27,7 +28,9 @@ const int numBinarySearchSteps = 5;
 const float biased = 0.005;
 
 const float waveStregnth = 0.03;
-const float waveFrequency = 0.1;
+const float waveFrequency = 0.15;
+const float shineDamper = 20.0;
+const float reflectivity = 0.6;
 
 const vec3 planes[6] = {
     vec3(0, 1, 0), vec3(0, -1, 0), vec3(0, 0, -1),
@@ -36,10 +39,13 @@ const vec3 planes[6] = {
 
 vec2 rayCast(vec3 position, vec3 reflection);
 
-vec4 getSSRColor(vec3 dir, vec4 defColor) {
+vec4 getRefraction(vec4 defColor) {
     vec3 hitPos = viewPos;
     float dDepth;
-    vec4 coords = vec4(rayCast(hitPos, dir), 0, 0);
+    vec4 coords = global.proj * vec4(viewPos, 1);
+
+    coords.xy /= coords.w;
+    coords = coords * 0.5 + 0.5;
 
     vec2 dudvOff = (texture(textures[dudv],
                             vec2(global.time) * 0.05 +
@@ -58,10 +64,9 @@ vec4 getSSRColor(vec3 dir, vec4 defColor) {
            defColor * (1 - useTex);
 }
 
-vec4 getSSRColor(vec3 dir) {
+vec4 getReflection(vec3 dir) {
     vec3 hitPos = viewPos;
     float dDepth;
-    vec4 coords = vec4(rayCast(hitPos, dir), 0, 0);
 
     vec2 dudvOff = (texture(textures[dudv],
                             vec2(global.time) * 0.05 +
@@ -71,12 +76,13 @@ vec4 getSSRColor(vec3 dir) {
                     1) *
                    waveStregnth;
 
-    coords += vec4(dudvOff, 0, 0);
-
     vec4 infCoords = global.proj * vec4(viewPos + dir * 1000, 1);
     infCoords += vec4(dudvOff, 0, 0) * infCoords.w;
 
     vec4 wCoords = global.invView * global.invP * infCoords;
+
+    vec4 coords =
+        vec4(rayCast(hitPos, normalize((global.invP * infCoords).xyz)), 0, 0);
 
     float useTex = step(0, coords.x) * step(-1, -coords.x) * step(0, coords.y) *
                    step(-1, -coords.y);
@@ -88,18 +94,41 @@ vec4 getSSRColor(vec3 dir) {
 }
 
 void main() {
+    vec2 dudvOff = (texture(textures[dudv],
+                            vec2(global.time) * 0.05 +
+                                vec2(worldPos.x, worldPos.z) * waveFrequency)
+                            .rg *
+                        2 -
+                    1) *
+                   waveStregnth;
+
+    vec3 normalMap = normalize(
+        texture(textures[normals], vec2(worldPos.x, worldPos.z) + dudvOff).rgb *
+            0.5 +
+        vec3(0.5));
+
+    vec3 worldNormal =
+        mat3(vec3(1, 0, 0), vec3(0, 0, 1), vec3(0, 1, 0)) * normalMap;
+
     vec3 normal = (global.view * vec4(0, 1, 0, 0)).xyz;
 
     vec3 reflected = normalize(reflect(normalize(viewPos), normalize(normal)));
     vec3 refracted = normalize(viewPos);
 
-    vec3 worldRef =
-        normalize(reflect(normalize(worldPos - global.camPos), vec3(0, 1, 0)));
+    float refractFactor =
+        abs(dot(normalize(worldPos - global.camPos), vec3(0, 1, 0)));
 
-    float refractFactor = abs(dot(normalize(viewPos), normalize(normal)));
+    // Calculate lighting
 
-    outColor = getSSRColor(reflected) * (1 - refractFactor) +
-               getSSRColor(refracted, vec4(0)) * refractFactor;
+    vec3 reflectedLight = reflect(normalize(lightDir), worldNormal);
+    float specular =
+        max(dot(reflectedLight, normalize(worldPos.xyz - global.camPos)), 0);
+    specular = pow(specular, shineDamper);
+
+    vec4 unlitColor = getReflection(reflected) * (1 - refractFactor) +
+                      getRefraction(vec4(0)) * refractFactor;
+
+    outColor = unlitColor + vec4(1) * specular * reflectivity;
 }
 
 vec2 generateProjectedPosition(vec3 pos) {

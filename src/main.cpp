@@ -3,7 +3,6 @@
 
 #include "engine/engine.hpp"
 
-
 void drawGUI(engine::Engine& engine) {
     auto isTrue = true;
     static auto frustum = false;
@@ -19,8 +18,6 @@ void drawGUI(engine::Engine& engine) {
 
     ImGui::InputFloat("fog density", &engine.state.fogDensity);
     ImGui::InputFloat("fog gradient", &engine.state.fogGradient);
-
-    ImGui::ColorPicker4("sky Color", glm::value_ptr(engine.state.skyColor));
 
     ImGui::End();
 }

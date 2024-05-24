@@ -15,9 +15,11 @@ layout(push_constant) uniform constants {
     uint snowBind;
     uint rock1Bind;
     uint rock2Bind;
+    uint skybox;
 };
 
 layout(binding = 0) uniform sampler2D textures[];
+layout(binding = 0) uniform samplerCube skyboxTextures[];
 
 float contribution(float val, float minval, float maxval) {
     return clamp(((val - minval) / (maxval - minval)), 0, 1);
@@ -39,8 +41,8 @@ vec4 getTextColor() {
 }
 
 void main() {
-    outColor = mix(
-        global.skyColor,
-        getTextColor() * clamp(dot(normal, normalize(vec3(1, -1, 1))), 0.2, 1),
-        visibility);
+    outColor =
+        mix(texture(skyboxTextures[skybox], worldPos.xyz - global.camPos),
+            getTextColor() * clamp(dot(normal, normalize(lightDir)), 0.2, 1),
+            visibility);
 }

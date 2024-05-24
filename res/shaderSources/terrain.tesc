@@ -1,12 +1,10 @@
 #version 450
 #extension GL_EXT_nonuniform_qualifier : require
-layout (vertices = 4) out;
+layout(vertices = 4) out;
 
 #include "globalData.h"
 
-layout(push_constant) uniform constants {
-  uint globalDataBinding;
-};
+layout(push_constant) uniform constants { uint globalDataBinding; };
 
 void main() {
     gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
@@ -22,21 +20,25 @@ void main() {
     float len11 = length(view11.xyz);
 
     const float MIN_DISTANCE = 5;
-    const float MAX_DISTANCE = 2000;
+    const float MAX_DISTANCE = 1500;
 
-    float dis00 = clamp((len00 - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0, 1);
-    float dis01 = clamp((len01 - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0, 1);
-    float dis10 = clamp((len10 - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0, 1);
-    float dis11 = clamp((len11 - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0, 1);
+    float dis00 =
+        clamp((len00 - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0, 1);
+    float dis01 =
+        clamp((len01 - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0, 1);
+    float dis10 =
+        clamp((len10 - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0, 1);
+    float dis11 =
+        clamp((len11 - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0, 1);
 
-    const int MIN_TESS_LEVEL = 8;
+    const int MIN_TESS_LEVEL = 4;
     const int MAX_TESS_LEVEL = 128;
 
     float level0 = mix(MAX_TESS_LEVEL, MIN_TESS_LEVEL, min(dis10, dis00));
     float level1 = mix(MAX_TESS_LEVEL, MIN_TESS_LEVEL, min(dis00, dis01));
     float level2 = mix(MAX_TESS_LEVEL, MIN_TESS_LEVEL, min(dis01, dis11));
     float level3 = mix(MAX_TESS_LEVEL, MIN_TESS_LEVEL, min(dis11, dis10));
-    
+
     gl_TessLevelOuter[0] = level0;
     gl_TessLevelOuter[1] = level1;
     gl_TessLevelOuter[2] = level2;
