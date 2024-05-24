@@ -25,9 +25,9 @@ void drawGUI(engine::Engine& engine) {
 int main() {
     engine::Engine engine({1920, 1080}, drawGUI);
     engine::Camera cam;
-    cam.position.y = 120;
+    cam.position.y = 70;
     cam.dir = {0, 0, 1};
-    float moveSpeed = 100.f;
+    float moveSpeed = 20.f;
     float sen = 20.f;
     bool capture = false;
     while (!engine.shouldClose()) {

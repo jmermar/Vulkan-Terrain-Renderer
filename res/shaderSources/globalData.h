@@ -14,4 +14,4 @@ layout(binding = 1) buffer GlobalData {
 
 #define global (globalData[globalDataBinding])
 
-const vec3 lightDir = vec3(1, -0.2, 0);
+const vec3 lightDir = vec3(1, -1, 0);

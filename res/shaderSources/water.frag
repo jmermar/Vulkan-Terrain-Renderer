@@ -27,9 +27,9 @@ const float searchDist = 5;
 const int numBinarySearchSteps = 5;
 const float biased = 0.005;
 
-const float waveStregnth = 0.03;
-const float waveFrequency = 0.02;
-const float shineDamper = 20.0;
+const float waveStregnth = 0.01;
+const float waveFrequency = 0.1;
+const float shineDamper = 40.0;
 const float reflectivity = 0.6;
 
 const vec3 planes[6] = {
@@ -89,8 +89,8 @@ vec4 getReflection(vec3 dir) {
 
     vec4 defColor = texture(arrayTextures[skybox], wCoords.xyz);
 
-    return texture(textures[screenTexture], coords.xy) * useTex +
-           defColor * (1 - useTex);
+    return (texture(textures[screenTexture], coords.xy) * useTex +
+            defColor * (1 - useTex));
 }
 
 void main() {
@@ -101,16 +101,15 @@ void main() {
                         2 -
                     1) *
                    waveStregnth;
-
     vec3 normalMap = normalize(
         texture(textures[normals],
-                vec2(worldPos.x, worldPos.z) * waveFrequency + dudvOff)
+                vec2(worldPos.x, worldPos.z) * waveFrequency + dudvOff.rg)
                 .rgb *
-            0.5 +
-        vec3(0.5));
+            2 -
+        vec3(1));
 
     vec3 worldNormal =
-        mat3(vec3(1, 0, 0), vec3(0, 0, 1), vec3(0, 1, 0)) * normalMap;
+        mat3(vec3(0, 0, 0), vec3(0, 0, 1), vec3(0, 1, 0)) * normalMap;
 
     vec3 normal = (global.view * vec4(0, 1, 0, 0)).xyz;
 
@@ -124,7 +123,7 @@ void main() {
 
     vec3 reflectedLight = reflect(normalize(lightDir), worldNormal);
     float specular =
-        max(dot(reflectedLight, normalize(worldPos.xyz - global.camPos)), 0);
+        max(dot(reflectedLight, normalize(global.camPos - worldPos.xyz)), 0);
     specular = pow(specular, shineDamper);
 
     vec4 unlitColor = getReflection(reflected) * (1 - refractFactor) +
@@ -147,6 +146,7 @@ vec3 generatePositionFromDepth(vec2 texturePos, float depth) {
 }
 
 vec2 rayCast(vec3 position, vec3 reflection) {
+    if (length(position) > 500) return vec2(-1);
     vec3 step = stepF * reflection;
     vec3 marchingPosition = position + step;
     float delta;
