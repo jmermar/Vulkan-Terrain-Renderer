@@ -28,7 +28,7 @@ const int numBinarySearchSteps = 5;
 const float biased = 0.005;
 
 const float waveStregnth = 0.03;
-const float waveFrequency = 0.15;
+const float waveFrequency = 0.02;
 const float shineDamper = 20.0;
 const float reflectivity = 0.6;
 
@@ -103,7 +103,9 @@ void main() {
                    waveStregnth;
 
     vec3 normalMap = normalize(
-        texture(textures[normals], vec2(worldPos.x, worldPos.z) + dudvOff).rgb *
+        texture(textures[normals],
+                vec2(worldPos.x, worldPos.z) * waveFrequency + dudvOff)
+                .rgb *
             0.5 +
         vec3(0.5));
 
