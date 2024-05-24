@@ -27,7 +27,7 @@ int main() {
     engine::Camera cam;
     cam.position.y = 70;
     cam.dir = {0, 0, 1};
-    float moveSpeed = 20.f;
+    float moveSpeed = 50.f;
     float sen = 20.f;
     bool capture = false;
     while (!engine.shouldClose()) {
