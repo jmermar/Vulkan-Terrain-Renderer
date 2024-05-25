@@ -1,6 +1,7 @@
 #version 450
 #extension GL_EXT_nonuniform_qualifier : require
 #include "globalData.h"
+#include "terrainGeneration.h"
 
 layout(location = 0) out vec4 outColor;
 
@@ -33,11 +34,9 @@ vec4 getTextColor() {
     vec4 rock2 = texture(textures[rock2Bind], uv);
 
     return mix(rock2,
-               mix(grass,
-                   mix(rock2, mix(rock1, snow, contribution(H, 60, 70)),
-                       contribution(H, 35, 42)),
-                   contribution(H, 27, 30)),
-               contribution(H, 29.5, 30));
+               mix(grass, rock1,
+                   contribution(H, GRASS_MAX_LEVEL - 1, GRASS_MAX_LEVEL)),
+               contribution(H, WATER_LEVEL - 1, WATER_LEVEL));
 }
 
 void main() {

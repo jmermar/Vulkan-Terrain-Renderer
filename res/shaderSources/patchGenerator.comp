@@ -4,11 +4,7 @@
 
 #include "GlobalData.h"
 #include "bindUtils.h"
-
-#define PATCH_SIZE 64
-#define MAX_PATCH 128
-#define NUM_PATCHES (MAX_PATCH * MAX_PATCH)
-#define WATER_LEVEL 30
+#include "terrainGeneration.h"
 
 layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 

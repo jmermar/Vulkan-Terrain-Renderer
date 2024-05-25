@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "engine/engine.hpp"
+#include "utils.hpp"
 
 void drawGUI(engine::Engine& engine) {
     auto isTrue = true;
@@ -25,9 +26,9 @@ void drawGUI(engine::Engine& engine) {
 int main() {
     engine::Engine engine({1920, 1080}, drawGUI);
     engine::Camera cam;
-    cam.position.y = 70;
+    cam.position.y = 20;
     cam.dir = {0, 0, 1};
-    float moveSpeed = 50.f;
+    float moveSpeed = 5.f;
     float sen = 20.f;
     bool capture = false;
     while (!engine.shouldClose()) {
@@ -42,23 +43,28 @@ int main() {
         cam.rotateX(engine.getMouseDelta().x * sen);
         cam.rotateY(engine.getMouseDelta().y * sen);
 
+        glm::vec3 right = glm::cross(cam.dir, glm::vec3(0, 1, 0));
+        glm::vec3 up = glm::vec3(0, 1, 0);
+        glm::vec3 forward = glm::cross(up, right);
+
         if (engine.isKeyDown(SDL_SCANCODE_W)) {
-            cam.position += cam.dir * deltaTime * moveSpeed;
+            cam.position += forward * deltaTime * moveSpeed;
         }
 
         if (engine.isKeyDown(SDL_SCANCODE_S)) {
-            cam.position -= cam.dir * deltaTime * moveSpeed;
+            cam.position -= forward * deltaTime * moveSpeed;
         }
 
         if (engine.isKeyDown(SDL_SCANCODE_A)) {
-            cam.position +=
-                glm::cross(glm::vec3(0, 1, 0), cam.dir) * deltaTime * moveSpeed;
+            cam.position -= right * deltaTime * moveSpeed;
         }
 
         if (engine.isKeyDown(SDL_SCANCODE_D)) {
-            cam.position -=
-                glm::cross(glm::vec3(0, 1, 0), cam.dir) * deltaTime * moveSpeed;
+            cam.position += right * deltaTime * moveSpeed;
         }
+
+        cam.position.y =
+            2 + getHeight(glm::vec2(cam.position.x, cam.position.z));
         engine.render(cam);
     }
     return 0;

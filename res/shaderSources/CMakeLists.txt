@@ -8,6 +8,10 @@ file(GLOB_RECURSE GLSL_SOURCE_FILES
     "*.tese"
     )
 
+file(GLOB_RECURSE GLSL_HEADERS
+  "*.h"
+)
+
 foreach(GLSL ${GLSL_SOURCE_FILES})
   message(STATUS "BUILDING SHADER")
   get_filename_component(FILE_NAME ${GLSL} NAME)
@@ -16,7 +20,7 @@ foreach(GLSL ${GLSL_SOURCE_FILES})
   add_custom_command(
     OUTPUT ${SPIRV}
     COMMAND ${GLSLC} ${GLSL} -o ${SPIRV}
-    DEPENDS ${GLSL})
+    DEPENDS ${GLSL} ${GLSL_HEADERS})
   list(APPEND SPIRV_BINARY_FILES ${SPIRV})
 endforeach(GLSL)
 
