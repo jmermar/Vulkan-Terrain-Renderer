@@ -170,8 +170,9 @@ void Camera::rotateX(float degrees) {
 }
 void Camera::rotateY(float degrees) {
     auto angle = glm::radians(degrees / 2.f);
-    glm::quat rotation(glm::cos(angle),
-                       glm::cross(dir, glm::vec3(0, 1, 0)) * glm::sin(angle));
+    glm::quat rotation(
+        glm::cos(angle),
+        glm::normalize(glm::cross(dir, glm::vec3(0, 1, 0))) * glm::sin(angle));
     glm::quat rotationC = glm::conjugate(rotation);
 
     dir = rotation * dir * rotationC;
@@ -206,7 +207,8 @@ Engine::Engine(const RendererConfig& config, std::function<void(Engine&)> cb) {
     frameBuffer =
         engine->createTexture(Size{1920, 1080}, val::TextureFormat::RGBA16);
     depthBuffer =
-        engine->createTexture(Size{1920, 1080}, val::TextureFormat::DEPTH32);
+        engine->createTexture(Size{1920, 1080}, val::TextureFormat::DEPTH32,
+                              val::TextureSampler::DEPTH);
 
     screenTexture =
         engine->createTexture(Size{1920, 1080}, val::TextureFormat::RGBA16,

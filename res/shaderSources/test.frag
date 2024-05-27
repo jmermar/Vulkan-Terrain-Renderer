@@ -42,6 +42,6 @@ vec4 getTextColor() {
 void main() {
     outColor =
         mix(texture(skyboxTextures[skybox], worldPos.xyz - global.camPos),
-            getTextColor() * clamp(dot(normal, normalize(lightDir)), 0.2, 1),
+            getTextColor() * clamp(dot(normal, normalize(lightDir)), 0.4, 1),
             visibility);
 }

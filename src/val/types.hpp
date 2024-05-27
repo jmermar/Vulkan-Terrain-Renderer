@@ -20,10 +20,7 @@ enum class TextureFormat : uint32_t {
     DEPTH32 = VK_FORMAT_D32_SFLOAT
 };
 
-enum class TextureSampler : uint32_t {
-    NEAREST = VK_FILTER_NEAREST,
-    LINEAR = VK_FILTER_LINEAR
-};
+enum class TextureSampler : uint32_t { NEAREST, LINEAR, DEPTH };
 
 enum class ShaderStage : uint32_t {
     VERTEX = VK_SHADER_STAGE_VERTEX_BIT,

@@ -3,15 +3,15 @@ const float PATCH_SIZE = 32;
 const uint MAX_PATCH = 64;
 const uint NUM_PATCHES = MAX_PATCH * MAX_PATCH;
 
-const float WATER_LEVEL = 15;
-const float MAX_HEIGHT = 45;
+const float WATER_LEVEL = 30;
+const float MAX_HEIGHT = 60;
 // Noise function
-const uint OCTAVES = 4;
-const float BASE_FREQUENCY = 1 / 1024.0;
-const float FREQ_FACTOR = 3;
-const float AMPLITUDE_FACTOR = 0.65;
+const uint OCTAVES = 8;
+const float BASE_FREQUENCY = 1 / 256.0;
+const float FREQ_FACTOR = 3.5;
+const float AMPLITUDE_FACTOR = 0.3;
 
-const float GRASS_MAX_LEVEL = 25;
+const float GRASS_MAX_LEVEL = 90;
 
 vec3 permute(vec3 x) { return mod(((x * 34.0) + 1.0) * x, 289.0); }
 

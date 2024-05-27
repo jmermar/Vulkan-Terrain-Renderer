@@ -12,7 +12,8 @@ class GlobalBinding {
     vk::raii::DescriptorSetLayout layout{nullptr};
     vk::raii::DescriptorSet descriptorSet{nullptr};
 
-    vk::raii::Sampler linearSampler{nullptr}, nearestSampler{nullptr};
+    vk::raii::Sampler linearSampler{nullptr}, nearestSampler{nullptr},
+        depthSampler{nullptr};
 
     std::vector<bool> textureBinds;
     std::vector<bool> storageBinds;

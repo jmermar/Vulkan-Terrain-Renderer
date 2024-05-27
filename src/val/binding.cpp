@@ -35,7 +35,8 @@ void GlobalBinding::init(const vk::raii::Device& device,
     textureBind.descriptorCount =
         properties.limits.maxDescriptorSetSampledImages;
     textureBind.stageFlags = vk::ShaderStageFlagBits::eAll;
-    bindingFlags.push_back(vk::DescriptorBindingFlagBits::ePartiallyBound | vk::DescriptorBindingFlagBits::eUpdateAfterBind);
+    bindingFlags.push_back(vk::DescriptorBindingFlagBits::ePartiallyBound |
+                           vk::DescriptorBindingFlagBits::eUpdateAfterBind);
 
     auto& storageBind = layoutBindings.emplace_back();
     storageBind.binding = STORAGE_BIND;
@@ -43,7 +44,8 @@ void GlobalBinding::init(const vk::raii::Device& device,
     storageBind.descriptorCount =
         properties.limits.maxDescriptorSetStorageBuffers;
     storageBind.stageFlags = vk::ShaderStageFlagBits::eAll;
-    bindingFlags.push_back(vk::DescriptorBindingFlagBits::ePartiallyBound | vk::DescriptorBindingFlagBits::eUpdateAfterBind);
+    bindingFlags.push_back(vk::DescriptorBindingFlagBits::ePartiallyBound |
+                           vk::DescriptorBindingFlagBits::eUpdateAfterBind);
 
     vk::DescriptorSetLayoutCreateInfo layoutCreateInfo;
     layoutCreateInfo.flags =
@@ -89,12 +91,20 @@ void GlobalBinding::init(const vk::raii::Device& device,
     // Create samplers
 
     vk::SamplerCreateInfo sampler;
-    sampler.magFilter = sampler.minFilter = vk::Filter::eNearest;
+    sampler.magFilter = sampler.minFilter = vk::Filter::eLinear;
     sampler.maxLod = 32;
+
+    linearSampler = device.createSampler(sampler);
+
+    sampler.magFilter = sampler.minFilter = vk::Filter::eNearest;
     nearestSampler = device.createSampler(sampler);
 
-    sampler.magFilter = sampler.minFilter = vk::Filter::eLinear;
-    linearSampler = device.createSampler(sampler);
+    sampler.addressModeU = vk::SamplerAddressMode::eClampToBorder;
+    sampler.addressModeV = vk::SamplerAddressMode::eClampToBorder;
+    sampler.addressModeW = vk::SamplerAddressMode::eClampToBorder;
+    sampler.borderColor = vk::BorderColor::eFloatTransparentBlack;
+
+    depthSampler = device.createSampler(sampler);
 }
 
 BindPoint<Texture> GlobalBinding::bindTexture(vk::ImageView texture,
@@ -105,8 +115,18 @@ BindPoint<Texture> GlobalBinding::bindTexture(vk::ImageView texture,
     vk::DescriptorImageInfo imageInfo;
 
     imageInfo.imageView = texture;
-    imageInfo.sampler =
-        sampling == TextureSampler::LINEAR ? *linearSampler : *nearestSampler;
+
+    switch (sampling) {
+        case TextureSampler::DEPTH:
+            imageInfo.sampler = *depthSampler;
+            break;
+        case TextureSampler::LINEAR:
+            imageInfo.sampler = *linearSampler;
+            break;
+        case TextureSampler::NEAREST:
+            imageInfo.sampler = *nearestSampler;
+            break;
+    }
     imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 
     write.dstSet = *descriptorSet;

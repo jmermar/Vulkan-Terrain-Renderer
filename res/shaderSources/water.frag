@@ -1,6 +1,7 @@
 #version 450
 #extension GL_EXT_nonuniform_qualifier : require
 #include "globalData.h"
+#include "pbr.h"
 
 layout(location = 0) in vec3 viewPos;
 layout(location = 1) in vec3 worldPos;
@@ -22,15 +23,15 @@ layout(push_constant) uniform constants {
 
 const float stepF = 2;
 const float minRayStep = 0.1;
-const int maxSteps = 30;
+const int maxSteps = 60;
 const float searchDist = 5;
 const int numBinarySearchSteps = 5;
 const float biased = 0.005;
 
-const float waveStregnth = 0.01;
-const float waveFrequency = 0.1;
+const float waveStregnth = 0.03;
+const float waveFrequency = 1;
 const float shineDamper = 40.0;
-const float reflectivity = 0.6;
+const float reflectivity = 0.5;
 
 const vec3 planes[6] = {
     vec3(0, 1, 0), vec3(0, -1, 0), vec3(0, 0, -1),
@@ -89,8 +90,8 @@ vec4 getReflection(vec3 dir) {
 
     vec4 defColor = texture(arrayTextures[skybox], wCoords.xyz);
 
-    return (texture(textures[screenTexture], coords.xy) * useTex +
-            defColor * (1 - useTex));
+    return ((texture(textures[screenTexture], coords.xy) * useTex +
+             defColor * (1 - useTex)));
 }
 
 void main() {
@@ -116,18 +117,20 @@ void main() {
     vec3 reflected = normalize(reflect(normalize(viewPos), normalize(normal)));
     vec3 refracted = normalize(viewPos);
 
-    float refractFactor =
-        abs(dot(normalize(worldPos - global.camPos), vec3(0, 1, 0)));
+    vec3 viewDir = normalize(worldPos - global.camPos);
+
+    float F = fresnelSchlick90(
+        clamp(dot(normalize(-viewDir), vec3(0, 1, 0)), 0, 1), 0.02, 1);
 
     // Calculate lighting
 
-    vec3 reflectedLight = reflect(normalize(lightDir), worldNormal);
-    float specular =
-        max(dot(reflectedLight, normalize(global.camPos - worldPos.xyz)), 0);
+    vec3 halfway = -normalize(normalize(lightDir) + viewDir);
+
+    float specular = max(dot(halfway, worldNormal), 0);
     specular = pow(specular, shineDamper);
 
-    vec4 unlitColor = getReflection(reflected) * (1 - refractFactor) +
-                      getRefraction(vec4(0)) * refractFactor;
+    vec4 unlitColor =
+        getReflection(reflected) * F + getRefraction(vec4(0)) * (1.0 - F);
 
     outColor = unlitColor + vec4(1) * specular * reflectivity;
 }

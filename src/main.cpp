@@ -43,9 +43,10 @@ int main() {
         cam.rotateX(engine.getMouseDelta().x * sen);
         cam.rotateY(engine.getMouseDelta().y * sen);
 
-        glm::vec3 right = glm::cross(cam.dir, glm::vec3(0, 1, 0));
+        glm::vec3 right =
+            glm::normalize(glm::cross(cam.dir, glm::vec3(0, 1, 0)));
         glm::vec3 up = glm::vec3(0, 1, 0);
-        glm::vec3 forward = glm::cross(up, right);
+        glm::vec3 forward = glm::normalize(glm::cross(up, right));
 
         if (engine.isKeyDown(SDL_SCANCODE_W)) {
             cam.position += forward * deltaTime * moveSpeed;
@@ -64,7 +65,9 @@ int main() {
         }
 
         cam.position.y =
-            2 + getHeight(glm::vec2(cam.position.x, cam.position.z));
+            0.5 + std::max(getHeight(glm::vec2(cam.position.x, cam.position.z)),
+                           WATER_LEVEL);
+
         engine.render(cam);
     }
     return 0;
