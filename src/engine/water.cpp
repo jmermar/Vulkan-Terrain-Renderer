@@ -36,7 +36,7 @@ void WaterRenderer::loadTextures() {
 
     auto normalsImage = file::loadImage("textures/water_normals.png");
     normals = engine.createTexture(normalsImage.size, val::TextureFormat::RGBA8,
-                                   val::TextureSampler::LINEAR, 8);
+                                   val::TextureSampler::NEAREST);
     writer.enqueueTextureWrite(normals, normalsImage.data.data());
 }
 

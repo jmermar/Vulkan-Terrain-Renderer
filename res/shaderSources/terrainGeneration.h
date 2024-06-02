@@ -1,6 +1,6 @@
 //Terrain generation
 const float PATCH_SIZE = 32;
-const uint MAX_PATCH = 64;
+const uint MAX_PATCH = 128;
 const uint NUM_PATCHES = MAX_PATCH * MAX_PATCH;
 
 const float WATER_LEVEL = 30;

@@ -43,8 +43,8 @@ void main() {
     normal =
         cross(normalize(right - worldPos.xyz), normalize(down - worldPos.xyz));
 
-    uv.x = worldPos.x / 8;
-    uv.y = worldPos.z / 8;
+    uv.x = worldPos.x;
+    uv.y = worldPos.z;
 
     float disToCamera = length(global.camPos - worldPos.xyz);
     visibility =

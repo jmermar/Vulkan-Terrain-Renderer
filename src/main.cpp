@@ -28,7 +28,7 @@ int main() {
     engine::Camera cam;
     cam.position.y = 20;
     cam.dir = {0, 0, 1};
-    float moveSpeed = 5.f;
+    float moveSpeed = 30.f;
     float sen = 20.f;
     bool capture = false;
     while (!engine.shouldClose()) {
@@ -46,7 +46,7 @@ int main() {
         glm::vec3 right =
             glm::normalize(glm::cross(cam.dir, glm::vec3(0, 1, 0)));
         glm::vec3 up = glm::vec3(0, 1, 0);
-        glm::vec3 forward = glm::normalize(glm::cross(up, right));
+        glm::vec3 forward = cam.dir;
 
         if (engine.isKeyDown(SDL_SCANCODE_W)) {
             cam.position += forward * deltaTime * moveSpeed;
@@ -63,10 +63,6 @@ int main() {
         if (engine.isKeyDown(SDL_SCANCODE_D)) {
             cam.position += right * deltaTime * moveSpeed;
         }
-
-        cam.position.y =
-            0.5 + std::max(getHeight(glm::vec2(cam.position.x, cam.position.z)),
-                           WATER_LEVEL);
 
         engine.render(cam);
     }

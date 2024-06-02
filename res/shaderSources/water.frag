@@ -61,8 +61,10 @@ vec4 getRefraction(vec4 defColor) {
     float useTex = step(0, coords.x) * step(-1, -coords.x) * step(0, coords.y) *
                    step(-1, -coords.y);
 
-    return texture(textures[screenTexture], coords.xy) * useTex +
-           defColor * (1 - useTex);
+    vec4 color = texture(textures[screenTexture], coords.xy) * useTex +
+                 defColor * (1 - useTex);
+
+    return color * vec4(0.7, 0.8, 1, 1);
 }
 
 vec4 getReflection(vec3 dir) {
