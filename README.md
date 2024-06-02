@@ -2,13 +2,14 @@
 
 ![](screenshots/banner.png)
 
-WIP procedural terrain renderer that uses tessellation for dynamic LOD and simplex noise for terrain generation.
+Simple procedural terrain renderer.
 
-# SSR Water (click the image to go to video)
+It uses perlin noise for heightmaps, tessellation for dynamic LOD and SSR for water reflections.
 
-[![](screenshots/water.gif)](https://www.youtube.com/watch?v=7c5PGedes9U)
+# Sample video (click image)
 
-Currently I'm working in a water shader which uses Screen Space Reflection for shading, it also uses a refraction/reflection ratio loosely based on fresnel effect. One thing I would like to improve is to make this shader PBR once I research more on the topic.
+[![](screenshots/water.gif)](https://www.youtube.com/watch?v=hysko2e0ro0)
+
 
 # Build
 
